@@ -1,13 +1,10 @@
 import React, { useCallback, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Upload, X, Image, ArrowRight, Loader2 } from 'lucide-react';
-
-const API_BASE = "http://localhost:5243";
+import { Upload, X, ArrowRight, Loader2 } from 'lucide-react';
 
 export default function ArtworkUploader({ artworks, onArtworksChange, onGenerate }) {
   const [dragActive, setDragActive] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const isLoggedIn = !!localStorage.getItem('token');
 
   const handleDrag = useCallback((e) => {
     e.preventDefault();
@@ -19,7 +16,23 @@ export default function ArtworkUploader({ artworks, onArtworksChange, onGenerate
     }
   }, []);
 
+  const uploadFiles = async (files) => {
+    setUploading(true);
+  
+    const newItems = files.map(file => ({
+      id: crypto.randomUUID(),
+      file,
+      preview: URL.createObjectURL(file),
+    }));
+  
+    onArtworksChange(prev => [...prev, ...newItems]);
+    setUploading(false);
+  };
+
+
+  
   const handleDrop = useCallback(async (e) => {
+    console.log('handleDrop',e);
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
@@ -34,58 +47,61 @@ export default function ArtworkUploader({ artworks, onArtworksChange, onGenerate
   }, []);
 
   const handleFileInput = async (e) => {
+    console.log('handleFileInput');
     const files = Array.from(e.target.files);
     if (files.length > 0) {
       await uploadFiles(files);
     }
   };
 
-  const uploadFiles = async (files) => {
-    setUploading(true);
-    const token = localStorage.getItem('token');
-    const uploaded = [];
+  // const uploadFiles = async (files) => {
+  //   console.log('upload files');
+  //   setUploading(true);
+  //   const token = localStorage.getItem('token');
+  //   const uploaded = [];
 
-    for (const file of files) {
-      try {
-        // For guest users, just create local previews
-        if (!token) {
-          uploaded.push({
-            id: `local-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-            url: URL.createObjectURL(file),
-            preview: URL.createObjectURL(file),
-            fileName: file.name,
-            isLocal: true,
-            file: file // Keep the file for later upload when user logs in
-          });
-        } else {
-          const formData = new FormData();
-          formData.append('file', file);
+  //   for (const file of files) {
+  //     try {
+  //       // For guest users, just create local previews
+  //       if (!token) {
+  //         uploaded.push({
+  //           id: `local-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+  //           url: URL.createObjectURL(file),
+  //           preview: URL.createObjectURL(file),
+  //           fileName: file.name,
+  //           isLocal: true,
+  //           file: file // Keep the file for later upload when user logs in
+  //         });
+  //       } else {
+  //         const formData = new FormData();
+  //         formData.append('file', file);
 
-          const res = await fetch(`${API_BASE}/artworks/upload`, {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${token}` },
-            body: formData
-          });
+  //         const res = await fetch(`${API_BASE}/artworks/upload`, {
+  //           method: 'POST',
+  //           headers: { 'Authorization': `Bearer ${token}` },
+  //           body: formData
+  //         });
 
-          if (res.ok) {
-            const data = await res.json();
-            uploaded.push({
-              ...data,
-              preview: URL.createObjectURL(file)
-            });
-          }
-        }
-      } catch (err) {
-        console.error('Upload error:', err);
-      }
-    }
+  //         if (res.ok) {
+  //           const data = await res.json();
+  //           uploaded.push({
+  //             ...data,
+  //             preview: URL.createObjectURL(file)
+  //           });
+  //         }
+  //       }
+  //     } catch (err) {
+  //       console.error('Upload error:', err);
+  //     }
+  //   }
 
-    onArtworksChange([...artworks, ...uploaded]);
-    setUploading(false);
-  };
+  //   console.log('uploaded to add:', uploaded);
+  //   onArtworksChange(prev => [...prev, ...uploaded]);
+  //   setUploading(false);
+  // };
 
   const removeArtwork = (id) => {
-    onArtworksChange(artworks.filter(a => a.id !== id));
+    onArtworksChange(prev => prev.filter(a => a.id !== id));
   };
 
   return (
@@ -120,7 +136,7 @@ export default function ArtworkUploader({ artworks, onArtworksChange, onGenerate
             <Loader2 className="w-12 h-12 text-rose-500 animate-spin mx-auto mb-4" />
           ) : (
             <div className={`w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center transition-colors ${
-              dragActive ? 'bg-rose-500' : 'bg-navy-900'
+              dragActive ? 'bg-rose-500' : 'bg-blue-900'
             }`}>
               <Upload className="w-8 h-8 text-white" />
             </div>
@@ -133,6 +149,7 @@ export default function ArtworkUploader({ artworks, onArtworksChange, onGenerate
       </div>
 
       {/* Uploaded Artworks */}
+
       <AnimatePresence>
         {artworks.length > 0 && (
           <motion.div
@@ -173,8 +190,8 @@ export default function ArtworkUploader({ artworks, onArtworksChange, onGenerate
               <button
                 onClick={onGenerate}
                 disabled={artworks.length === 0}
-                className="inline-flex items-center gap-2 px-8 py-4 bg-navy-900 text-white rounded-xl font-medium hover:bg-navy-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-              >
+                className="group inline-flex items-center gap-2 px-8 py-4 bg-blue-900 text-white rounded-full hover:bg-navy-800 transition-all hover:shadow-xl hover:shadow-navy-900/20"
+                >
                 Generate Pattern
                 <ArrowRight className="w-5 h-5" />
               </button>
@@ -184,12 +201,12 @@ export default function ArtworkUploader({ artworks, onArtworksChange, onGenerate
       </AnimatePresence>
 
       {/* Empty State */}
-      {artworks.length === 0 && (
+      {/* {artworks.length === 0 && (
         <div className="mt-12 text-center">
           <Image className="w-16 h-16 text-gray-300 mx-auto mb-4" />
           <p className="text-gray-500">Upload images to get started</p>
         </div>
-      )}
+      )} */}
     </div>
   );
 }

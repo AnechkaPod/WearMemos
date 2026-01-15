@@ -1,18 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { 
-  CreditCard, 
-  Truck, 
-  Shield, 
-  ArrowRight, 
+import {
+  CreditCard,
+  Truck,
+  Shield,
+  ArrowRight,
   Loader2,
   Check,
   MapPin
 } from 'lucide-react';
 import AppLayout from '@/components/layout/AppLayout';
-
-const API_BASE = "http://localhost:5243";
+import apiService from '@/api/apiService';
 
 export default function Checkout() {
   const navigate = useNavigate();
@@ -56,29 +55,17 @@ export default function Checkout() {
     e.preventDefault();
     setLoading(true);
 
-    const token = localStorage.getItem('token');
-
     try {
-      const res = await fetch(`${API_BASE}/orders`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          designId: orderData.designId,
-          productType: orderData.product.id,
-          size: orderData.size,
-          color: orderData.color.id,
-          quantity: orderData.quantity,
-          shippingInfo,
-          totalAmount: orderData.product.price * orderData.quantity + 5.99
-        })
+      const data = await apiService.orders.create({
+        designId: orderData.designId,
+        productType: orderData.product.id,
+        size: orderData.size,
+        color: orderData.color.id,
+        quantity: orderData.quantity,
+        shippingInfo,
+        totalAmount: orderData.product.price * orderData.quantity + 5.99
       });
 
-      if (!res.ok) throw new Error('Order failed');
-
-      const data = await res.json();
       sessionStorage.removeItem('checkoutData');
       navigate(`/orders/${data.id}`);
     } catch (err) {
@@ -257,7 +244,7 @@ export default function Checkout() {
 
                   <button
                     type="submit"
-                    className="mt-6 w-full py-4 bg-navy-900 text-white rounded-xl font-medium hover:bg-navy-800 transition-all flex items-center justify-center gap-2"
+                    className="mt-6 w-full py-4 bg-blue-900 text-white rounded-xl font-medium hover:bg-navy-800 transition-all flex items-center justify-center gap-2"
                   >
                     Continue to Payment
                     <ArrowRight className="w-5 h-5" />

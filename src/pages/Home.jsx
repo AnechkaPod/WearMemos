@@ -8,8 +8,11 @@ export default function Home() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
+    console.log('isLoggedIn',isLoggedIn);
     const token = localStorage.getItem('token');
-    setIsLoggedIn(!!token);
+    console.log('token',token);
+  //setIsLoggedIn(!!token);
+    console.log('!!token',!!token);
   }, []);
 
   const features = [
@@ -48,7 +51,7 @@ export default function Home() {
                 </Link>
                 <Link 
                   to="/design"
-                  className="px-5 py-2.5 bg-navy-900 text-white rounded-full hover:bg-navy-800 transition-all hover:shadow-lg"
+                  className="px-5 py-2.5 bg-blue-900 text-white rounded-full hover:bg-navy-800 transition-all hover:shadow-lg"
                 >
                   New Design
                 </Link>
@@ -60,7 +63,7 @@ export default function Home() {
                 </Link>
                 <Link 
                   to="/design"
-                  className="px-5 py-2.5 bg-navy-900 text-white rounded-full hover:bg-navy-800 transition-all hover:shadow-lg"
+                  className="px-5 py-2.5 bg-blue-900 text-white rounded-full hover:bg-navy-800 transition-all hover:shadow-lg"
                 >
                   Start Designing
                 </Link>
@@ -95,7 +98,7 @@ export default function Home() {
               <div className="flex flex-wrap gap-4">
                 <Link 
                   to="/design"
-                  className="group inline-flex items-center gap-2 px-8 py-4 bg-navy-900 text-white rounded-full hover:bg-navy-800 transition-all hover:shadow-xl hover:shadow-navy-900/20"
+                  className="group inline-flex items-center gap-2 px-8 py-4 bg-blue-900 text-white rounded-full hover:bg-navy-800 transition-all hover:shadow-xl hover:shadow-navy-900/20"
                 >
                   Start Designing Free
                   <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
@@ -193,7 +196,7 @@ export default function Home() {
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="relative overflow-hidden rounded-3xl bg-navy-900 p-12 lg:p-16 text-center"
+            className="relative overflow-hidden rounded-3xl bg-blue-900 p-12 lg:p-16 text-center"
           >
             <div className="absolute inset-0 bg-gradient-to-r from-rose-500/20 to-amber-500/20" />
             <div className="relative z-10">

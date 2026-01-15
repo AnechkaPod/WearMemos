@@ -1,18 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { 
-  Package, 
-  Clock, 
-  CheckCircle2, 
-  Truck, 
+import {
+  Package,
+  Clock,
+  CheckCircle2,
+  Truck,
   ArrowRight,
   Loader2,
   ShoppingBag
 } from 'lucide-react';
 import AppLayout from '@/components/layout/AppLayout';
-
-const API_BASE = "http://localhost:5243";
+import apiService from '@/api/apiService';
 
 const statusConfig = {
   pending: { icon: Clock, color: 'text-amber-500', bg: 'bg-amber-50', label: 'Pending' },
@@ -30,18 +29,8 @@ export default function Orders() {
   }, []);
 
   const fetchOrders = async () => {
-    const token = localStorage.getItem('token');
-
     try {
-      const res = await fetch(`${API_BASE}/orders`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (!res.ok) throw new Error('Failed to fetch orders');
-
-      const data = await res.json();
+      const data = await apiService.orders.getAll();
       setOrders(data);
     } catch (err) {
       console.error('Fetch orders error:', err);

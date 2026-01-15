@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Heart, Mail, Lock, User, ArrowRight, Loader2 } from 'lucide-react';
-
-const API_BASE = "https://localhost:7077";
+import apiService from '@/api/apiService';
+import { setAuthData } from '@/api/config';
 
 export default function Register() {
   const navigate = useNavigate();
@@ -31,24 +31,13 @@ export default function Register() {
     setLoading(true);
 
     try {
-      const res = await fetch(`${API_BASE}/auth/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          fullName: formData.fullName,
-          email: formData.email,
-          password: formData.password
-        })
-      });
+      const data = await apiService.auth.register(
+        formData.fullName,
+        formData.email,
+        formData.password
+      );
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.message || 'Registration failed');
-      }
-
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
+      setAuthData(data.token, data.user);
       navigate(redirectTo);
     } catch (err) {
       setError(err.message);

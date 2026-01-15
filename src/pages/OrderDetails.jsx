@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { 
-  Package, 
-  Clock, 
-  CheckCircle2, 
-  Truck, 
+import {
+  Package,
+  Clock,
+  CheckCircle2,
+  Truck,
   ArrowLeft,
   Loader2,
   MapPin,
@@ -13,8 +13,7 @@ import {
   CreditCard
 } from 'lucide-react';
 import AppLayout from '@/components/layout/AppLayout';
-
-const API_BASE = "http://localhost:5243";
+import apiService from '@/api/apiService';
 
 const statusConfig = {
   pending: { icon: Clock, color: 'text-amber-500', bg: 'bg-amber-100', label: 'Pending' },

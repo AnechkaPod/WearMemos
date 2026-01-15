@@ -6,8 +6,8 @@ import ArtworkUploader from '@/components/design/ArtworkUploader';
 import PatternEditor from '@/components/design/PatternEditor';
 import MockupViewer from '@/components/design/MockupViewer';
 import DesignToolbar from '@/components/design/DesignToolbar';
-
-const API_BASE = "http://localhost:5243";
+import apiService from '@/api/apiService';
+import { isAuthenticated } from '@/api/config';
 
 export default function Design() {
   const navigate = useNavigate();
@@ -33,8 +33,7 @@ export default function Design() {
   const [mockupUrl, setMockup] = useState(null);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    setIsLoggedIn(!!token);
+    setIsLoggedIn(isAuthenticated());
 
     // Load uploaded artworks from session storage
     const stored = sessionStorage.getItem('uploadedArtworks');
@@ -68,28 +67,26 @@ export default function Design() {
     }
   }, [designId]);
 
+  async function analyzeArtworksIfNeeded(artworks) {
+    for (const artwork of artworks) {
+      if (artwork.status === 'TemporaryUploaded') {
+        await apiService.artworks.analyze(artwork.id);
+      }
+    }
+  }
+  
   const generatePattern = async () => {
+    console.log('generatePattern');
     if (uploadedArtworks.length === 0) return;
-    
+
     setGenerating(true);
-    const token = localStorage.getItem('token');
 
     try {
-      const res = await fetch(`${API_BASE}/patterns/generate`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          artworkIds: uploadedArtworks.map(a => a.id),
-          settings: patternSettings
-        })
-      });
+      // await analyzeArtworksIfNeeded(uploadedArtworks);
 
-      if (!res.ok) throw new Error('Pattern generation failed');
+      const files = uploadedArtworks.map(a => a.file);
+      const data = await apiService.patterns.generate(files, patternSettings);
 
-      const data = await res.json();
       setPatternSettings({ ...patternSettings, patternUrl: data.patternUrl });
       setActiveTab('pattern');
     } catch (err) {
@@ -103,26 +100,16 @@ export default function Design() {
     if (!patternSettings.patternUrl) return;
 
     setGenerating(true);
-    const token = localStorage.getItem('token');
 
     try {
-      const res = await fetch(`${API_BASE}/mockups/generate`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          patternUrl: patternSettings.patternUrl,
-          productType,
-          settings: patternSettings
-        })
-      });
+      const data = await apiService.mockups.generate(
+        patternSettings.patternUrl,
+        productType,
+        patternSettings
+      );
 
-      if (!res.ok) throw new Error('Mockup generation failed');
-
-      const data = await res.json();
-      setMockup(data.mockupUrl);
+      console.log('mockup generate data', data);
+      setMockup(data.mockups[0]);
       setActiveTab('mockup');
     } catch (err) {
       console.error('Mockup generation error:', err);
@@ -141,32 +128,20 @@ export default function Design() {
   };
 
   const saveDesign = async () => {
-    const token = localStorage.getItem('token');
-
     // If not logged in, save to session and prompt login
-    if (!token) {
+    if (!isAuthenticated()) {
       saveDesignToSession();
       setShowLoginPrompt(true);
       return;
     }
 
     try {
-      const res = await fetch(`${API_BASE}/designs`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          artworkIds: uploadedArtworks.map(a => a.id),
-          patternSettings,
-          mockupUrl
-        })
-      });
+      const data = await apiService.designs.create(
+        uploadedArtworks.map(a => a.id),
+        patternSettings,
+        mockupUrl
+      );
 
-      if (!res.ok) throw new Error('Save failed');
-
-      const data = await res.json();
       sessionStorage.removeItem('unsavedDesign');
       sessionStorage.setItem('mockupUrl', mockupUrl || '');
       navigate(`/mockup?designId=${data.id}`);
@@ -217,7 +192,7 @@ export default function Design() {
                 </button>
                 <Link
                   to="/register"
-                  className="px-4 py-2 bg-navy-900 text-white rounded-lg hover:bg-navy-800 transition-all text-sm"
+                  className="px-4 py-2 bg-blue-900 text-white rounded-lg hover:bg-navy-800 transition-all text-sm"
                 >
                   Create Account
                 </Link>
@@ -273,7 +248,7 @@ export default function Design() {
         {/* Tab Navigation */}
         <div className="flex-shrink-0 px-6 pt-6 bg-white border-b border-gray-100">
           <div className="flex items-center gap-8">
-            {tabs.map((tab, index) => (
+            {tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
@@ -342,11 +317,11 @@ export default function Design() {
           </div>
 
           {/* Toolbar */}
-          <DesignToolbar
+          {/* <DesignToolbar
             activeTab={activeTab}
             settings={patternSettings}
             onSettingsChange={setPatternSettings}
-          />
+          /> */}
         </div>
       </div>
     </div>

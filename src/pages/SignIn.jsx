@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Heart, Mail, Lock, ArrowRight, Loader2 } from 'lucide-react';
-
-const API_BASE = "http://localhost:5243";
+import apiService from '@/api/apiService';
+import { setAuthData } from '@/api/config';
 
 export default function SignIn() {
   const navigate = useNavigate();
@@ -20,20 +20,9 @@ export default function SignIn() {
     setError('');
 
     try {
-      const res = await fetch(`${API_BASE}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
-      });
+      const data = await apiService.auth.login(formData.email, formData.password);
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.message || 'Login failed');
-      }
-
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
+      setAuthData(data.token, data.user);
       
       // Check if there's an unsaved design to restore
       const unsavedDesign = sessionStorage.getItem('unsavedDesign');
@@ -45,20 +34,11 @@ export default function SignIn() {
           for (const artwork of design.artworks) {
             if (artwork.isLocal && artwork.file) {
               try {
-                const formData = new FormData();
-                formData.append('file', artwork.file);
-                const uploadRes = await fetch(`${API_BASE}/artworks/upload`, {
-                  method: 'POST',
-                  headers: { 'Authorization': `Bearer ${data.token}` },
-                  body: formData
-                });
-                if (uploadRes.ok) {
-                  const uploadedData = await uploadRes.json();
-                  artwork.id = uploadedData.id;
-                  artwork.url = uploadedData.url;
-                  artwork.isLocal = false;
-                  delete artwork.file;
-                }
+                const uploadedData = await apiService.artworks.upload(artwork.file);
+                artwork.id = uploadedData.id;
+                artwork.url = uploadedData.url;
+                artwork.isLocal = false;
+                delete artwork.file;
               } catch (err) {
                 console.error('Re-upload error:', err);
               }

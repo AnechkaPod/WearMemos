@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { 
-  ShoppingBag, 
-  Shirt, 
-  Square, 
+import {
+  ShoppingBag,
+  Shirt,
+  Square,
   Circle,
   Check,
   ArrowRight,
@@ -13,11 +13,11 @@ import {
   Heart,
   LogIn
 } from 'lucide-react';
-
-const API_BASE = "http://localhost:5243";
+import apiService from '@/api/apiService';
+import { isAuthenticated } from '@/api/config';
 
 const products = [
-  { id: 'tshirt', name: 'T-Shirt', icon: Shirt, price: 29.99 },
+  { id: 'tshirt', name: 'T-Shirtt', icon: Shirt, price: 29.99 },
   { id: 'hoodie', name: 'Hoodie', icon: Shirt, price: 49.99 },
   { id: 'totebag', name: 'Tote Bag', icon: ShoppingBag, price: 24.99 },
   { id: 'pillow', name: 'Pillow', icon: Square, price: 34.99 },
@@ -50,8 +50,7 @@ export default function Mockup() {
   const mockupUrl = sessionStorage.getItem('mockupUrl') || null;
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    setIsLoggedIn(!!token);
+    setIsLoggedIn(isAuthenticated());
   }, []);
   const [selectedSize, setSelectedSize] = useState('M');
   const [selectedColor, setSelectedColor] = useState(colors[0]);
@@ -61,26 +60,13 @@ export default function Mockup() {
 
   const regenerateMockup = async () => {
     setGenerating(true);
-    const token = localStorage.getItem('token');
 
     try {
-      const res = await fetch(`${API_BASE}/mockups/generate`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          designId,
-          productType: selectedProduct.id,
-          color: selectedColor.id,
-          settings: patternSettings
-        })
-      });
-
-      if (!res.ok) throw new Error('Mockup generation failed');
-
-      const data = await res.json();
+      const data = await apiService.mockups.generate(
+        designId,
+        selectedProduct.id,
+        { ...patternSettings, color: selectedColor.id }
+      );
       setCurrentMockup(data.mockupUrl);
     } catch (err) {
       console.error('Mockup error:', err);

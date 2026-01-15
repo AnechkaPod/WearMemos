@@ -12,6 +12,16 @@ export default function MockupViewer({ mockupUrl, onSave }) {
     }
   };
 
+  const handleOrder = () => {
+    // if (mockupUrl) {
+    //   const link = document.createElement('a');
+    //   link.href = mockupUrl;
+    //   link.download = 'wear-memories-mockup.png';
+    //   link.click();
+    // }
+  };
+  
+
   return (
     <div className="max-w-3xl mx-auto">
       <div className="text-center mb-8">
@@ -50,13 +60,20 @@ export default function MockupViewer({ mockupUrl, onSave }) {
           animate={{ opacity: 1, y: 0 }}
           className="flex flex-wrap justify-center gap-4"
         >
-          <button
+             <button
+            onClick={handleOrder}
+            className="inline-flex items-center gap-2 px-6 py-3 border-2 border-gray-200 text-gray-700 rounded-xl font-medium hover:border-gray-300 hover:bg-gray-50 transition-all"
+          >
+            <Download className="w-5 h-5" />
+           Order Now
+          </button>
+          {/* <button
             onClick={handleDownload}
             className="inline-flex items-center gap-2 px-6 py-3 border-2 border-gray-200 text-gray-700 rounded-xl font-medium hover:border-gray-300 hover:bg-gray-50 transition-all"
           >
             <Download className="w-5 h-5" />
             Download Preview
-          </button>
+          </button> */}
           <button
             className="inline-flex items-center gap-2 px-6 py-3 border-2 border-gray-200 text-gray-700 rounded-xl font-medium hover:border-gray-300 hover:bg-gray-50 transition-all"
           >
@@ -65,9 +82,9 @@ export default function MockupViewer({ mockupUrl, onSave }) {
           </button>
           <button
             onClick={onSave}
-            className="inline-flex items-center gap-2 px-8 py-3 bg-navy-900 text-white rounded-xl font-medium hover:bg-navy-800 transition-all"
+            className="inline-flex items-center gap-2 px-8 py-3 bg-blue-900 text-white rounded-xl font-medium hover:bg-navy-800 transition-all"
           >
-            <Check className="w-5 h-5" />
+            {/* <Check className="w-5 h-5" /> */}
             Save & Continue
           </button>
         </motion.div>
