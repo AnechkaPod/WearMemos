@@ -1,18 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { 
-  Plus, 
-  Palette, 
-  Calendar, 
+import {
+  Plus,
+  Palette,
+  Calendar,
   ArrowRight,
   Loader2,
   Heart,
   Trash2
 } from 'lucide-react';
 import AppLayout from '@/components/layout/AppLayout';
-
-const API_BASE = "http://localhost:5243";
+import apiService from '@/api/apiService';
+import { isAuthenticated } from '@/api/config';
 
 export default function MyDesigns() {
   const navigate = useNavigate();
@@ -20,8 +20,7 @@ export default function MyDesigns() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token) {
+    if (!isAuthenticated()) {
       navigate('/login');
       return;
     }
@@ -29,18 +28,9 @@ export default function MyDesigns() {
   }, []);
 
   const fetchDesigns = async () => {
-    const token = localStorage.getItem('token');
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-
     try {
-      const res = await fetch(`${API_BASE}/designs/user/${user.id}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        setDesigns(data);
-      }
+      const data = await apiService.designs.getAll();
+      setDesigns(data);
     } catch (err) {
       console.error('Fetch designs error:', err);
     } finally {

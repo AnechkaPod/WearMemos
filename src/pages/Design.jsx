@@ -5,6 +5,7 @@ import { Loader2, Heart, LogIn, FolderOpen } from 'lucide-react';
 import ArtworkUploader from '@/components/design/ArtworkUploader';
 import PatternEditor from '@/components/design/PatternEditor';
 import MockupViewer from '@/components/design/MockupViewer';
+import ShopViewer from '@/components/design/ShopViewer';
 import DesignToolbar from '@/components/design/DesignToolbar';
 import apiService from '@/api/apiService';
 import { isAuthenticated } from '@/api/config';
@@ -18,8 +19,9 @@ export default function Design() {
   const [generating, setGenerating] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
-  
+
   const [uploadedArtworks, setUploadedArtworks] = useState([]);
+  const [generatedPatterns, setGeneratedPatterns] = useState([]);
   const [patternSettings, setPatternSettings] = useState({
     layout: 'grid',
     rotation: 0,
@@ -86,9 +88,10 @@ export default function Design() {
 
       const files = uploadedArtworks.map(a => a.file);
       const data = await apiService.patterns.generate(files, patternSettings);
+      console.log('pattern generate data', data);
 
-      setPatternSettings({ ...patternSettings, patternUrl: data.patternUrl });
-      setActiveTab('pattern');
+      setGeneratedPatterns(data.patterns);
+      setActiveTab('shop');
     } catch (err) {
       console.error('Pattern generation error:', err);
     } finally {
@@ -155,10 +158,24 @@ export default function Design() {
     navigate('/sign-in?redirect=/design');
   };
 
+  const handleSelectMockup = (mockupUrl, mockUpName, patternUrl) => {
+    // Store the selected mockup data in sessionStorage
+    const mockupData = {
+      mockupUrl,
+      mockUpName,
+      patternUrl
+    };
+    sessionStorage.setItem('selectedMockup', JSON.stringify(mockupData));
+
+    // Navigate to the product page
+    navigate('/mockup');
+  };
+
   const tabs = [
     { id: 'artwork', label: 'Artwork', step: 1 },
     { id: 'pattern', label: 'Pattern', step: 2 },
-    { id: 'mockup', label: 'Preview', step: 3 }
+    { id: 'shop', label: 'Shop', step: 3 },
+    { id: 'mockup', label: 'Preview', step: 4 }
   ];
 
   return (
@@ -305,6 +322,13 @@ export default function Design() {
                 settings={patternSettings}
                 onSettingsChange={setPatternSettings}
                 onGenerateMockup={generateMockup}
+              />
+            )}
+
+            {activeTab === 'shop' && (
+              <ShopViewer
+                patterns={generatedPatterns}
+                onSelectMockup={handleSelectMockup}
               />
             )}
 

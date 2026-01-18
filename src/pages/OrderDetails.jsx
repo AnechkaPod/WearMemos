@@ -39,18 +39,8 @@ export default function OrderDetails() {
   }, [id]);
 
   const fetchOrder = async () => {
-    const token = localStorage.getItem('token');
-
     try {
-      const res = await fetch(`${API_BASE}/orders/${id}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (!res.ok) throw new Error('Failed to fetch order');
-
-      const data = await res.json();
+      const data = await apiService.orders.getById(id);
       setOrder(data);
     } catch (err) {
       console.error('Fetch order error:', err);

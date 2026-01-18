@@ -38,25 +38,33 @@ export default function Mockup() {
   const designId = searchParams.get('designId');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
-  
+
   const [patternSettings] = useState({
     layout: 'grid',
     rotation: 0,
     spacing: 'normal',
     scale: 100
   });
-  
-  const [selectedProduct, setSelectedProduct] = useState(products[0]);
-  const mockupUrl = sessionStorage.getItem('mockupUrl') || null;
 
-  useEffect(() => {
-    setIsLoggedIn(isAuthenticated());
-  }, []);
+  // Load selected mockup data from sessionStorage
+  const selectedMockupData = JSON.parse(sessionStorage.getItem('selectedMockup') || '{}');
+  const mockupUrl = selectedMockupData.mockupUrl || sessionStorage.getItem('mockupUrl') || null;
+
+  // Find the product that matches the mockUpName
+  const initialProduct = selectedMockupData.mockUpName
+    ? products.find(p => p.name.toLowerCase() === selectedMockupData.mockUpName.toLowerCase()) || products[0]
+    : products[0];
+
+  const [selectedProduct, setSelectedProduct] = useState(initialProduct);
   const [selectedSize, setSelectedSize] = useState('M');
   const [selectedColor, setSelectedColor] = useState(colors[0]);
   const [quantity, setQuantity] = useState(1);
   const [generating, setGenerating] = useState(false);
   const [currentMockup, setCurrentMockup] = useState(mockupUrl);
+
+  useEffect(() => {
+    setIsLoggedIn(isAuthenticated());
+  }, []);
 
   const regenerateMockup = async () => {
     setGenerating(true);
@@ -217,7 +225,7 @@ export default function Mockup() {
             {/* Options Panel */}
             <div className="space-y-8">
               {/* Product Selection */}
-              <div>
+              {/* <div>
                 <h3 className="text-lg font-semibold text-navy-900 mb-4">Select Product</h3>
                 <div className="grid grid-cols-3 gap-3">
                   {products.map((product) => (
@@ -238,7 +246,7 @@ export default function Mockup() {
                     </button>
                   ))}
                 </div>
-              </div>
+              </div> */}
 
               {/* Size Selection */}
               {['tshirt', 'hoodie'].includes(selectedProduct.id) && (

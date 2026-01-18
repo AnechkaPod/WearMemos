@@ -83,7 +83,7 @@ class ApiService {
         formData.append('files', file);
       });
       formData.append('settingsJson', JSON.stringify(settings));
-
+      console.log('settingsJson FOR generate', JSON.stringify(settings));
       return this.request('/patterns/generate', {
         method: 'POST',
         body: formData,
