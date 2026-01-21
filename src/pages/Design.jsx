@@ -90,7 +90,9 @@ export default function Design() {
       const data = await apiService.patterns.generate(files, patternSettings);
       console.log('pattern generate data', data);
 
-      setGeneratedPatterns(data.patterns);
+      // Flatten all mockups from all pattern results into a single array
+      const allMockups = data.flatMap(item => item.mockups);
+      setGeneratedPatterns(allMockups);
       setActiveTab('shop');
     } catch (err) {
       console.error('Pattern generation error:', err);
@@ -158,13 +160,8 @@ export default function Design() {
     navigate('/sign-in?redirect=/design');
   };
 
-  const handleSelectMockup = (mockupUrl, mockUpName, patternUrl) => {
+  const handleSelectMockup = (mockupData) => {
     // Store the selected mockup data in sessionStorage
-    const mockupData = {
-      mockupUrl,
-      mockUpName,
-      patternUrl
-    };
     sessionStorage.setItem('selectedMockup', JSON.stringify(mockupData));
 
     // Navigate to the product page
@@ -327,7 +324,7 @@ export default function Design() {
 
             {activeTab === 'shop' && (
               <ShopViewer
-                patterns={generatedPatterns}
+                mockups={generatedPatterns}
                 onSelectMockup={handleSelectMockup}
               />
             )}

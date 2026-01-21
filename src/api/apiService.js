@@ -101,6 +101,13 @@ class ApiService {
         requiresAuth: true,
       });
     },
+
+    getDetails: async (mockupData) => {
+      return this.request('/mockups/details', {
+        method: 'POST',
+        body: JSON.stringify(mockupData),
+      });
+    },
   };
 
   // Design endpoints

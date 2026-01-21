@@ -47,23 +47,41 @@ export default function Mockup() {
   });
 
   // Load selected mockup data from sessionStorage
+  // Data structure: { variantIds: [...], mockupUrl: "...", extraMockups: [...] }
   const selectedMockupData = JSON.parse(sessionStorage.getItem('selectedMockup') || '{}');
   const mockupUrl = selectedMockupData.mockupUrl || sessionStorage.getItem('mockupUrl') || null;
 
-  // Find the product that matches the mockUpName
-  const initialProduct = selectedMockupData.mockUpName
-    ? products.find(p => p.name.toLowerCase() === selectedMockupData.mockUpName.toLowerCase()) || products[0]
-    : products[0];
-
-  const [selectedProduct, setSelectedProduct] = useState(initialProduct);
+  const [selectedProduct, setSelectedProduct] = useState(products[0]);
   const [selectedSize, setSelectedSize] = useState('M');
   const [selectedColor, setSelectedColor] = useState(colors[0]);
   const [quantity, setQuantity] = useState(1);
   const [generating, setGenerating] = useState(false);
   const [currentMockup, setCurrentMockup] = useState(mockupUrl);
+  const [mockupDetails, setMockupDetails] = useState(null);
+  const [loadingDetails, setLoadingDetails] = useState(false);
+  const [variantIds, setVariantIds] = useState(selectedMockupData.variantIds || []);
 
   useEffect(() => {
     setIsLoggedIn(isAuthenticated());
+
+    // Fetch mockup details if we have selected mockup data
+    const fetchMockupDetails = async () => {
+      const storedData = JSON.parse(sessionStorage.getItem('selectedMockup') || '{}');
+      if (!storedData.mockupUrl) return;
+
+      setLoadingDetails(true);
+      // try {
+      //   const data = await apiService.mockups.getDetails(storedData);
+      //   console.log('mockup details', data);
+      //   setMockupDetails(data);
+      // } catch (err) {
+      //   console.error('Error fetching mockup details:', err);
+      // } finally {
+      //   setLoadingDetails(false);
+      // }
+    };
+
+    fetchMockupDetails();
   }, []);
 
   const regenerateMockup = async () => {
