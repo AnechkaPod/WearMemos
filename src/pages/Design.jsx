@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Loader2, Heart, LogIn, FolderOpen } from 'lucide-react';
+import { Loader2, Heart, User, FolderOpen, ShoppingCart } from 'lucide-react';
 import ArtworkUploader from '@/components/design/ArtworkUploader';
 import apiService from '@/api/apiService';
 import { isAuthenticated } from '@/api/config';
@@ -41,6 +41,7 @@ export default function Design() {
 
     try {
       const files = uploadedArtworks.map(a => a.file);
+      console.log('files to generate pattern....', files);  
       const data = await apiService.patterns.generate(files, patternSettings);
       console.log('pattern generate data', data);
 
@@ -60,7 +61,7 @@ export default function Design() {
   const handleLoginRedirect = () => {
     // Save artworks before redirecting
     sessionStorage.setItem('uploadedArtworks', JSON.stringify(uploadedArtworks));
-    navigate('/sign-in?redirect=/design');
+    navigate('/signin?redirect=/design');
   };
 
   return (
@@ -84,22 +85,16 @@ export default function Design() {
                 </Link>
               </>
             ) : (
-              <>
-                <button
-                  onClick={handleLoginRedirect}
-                  className="flex items-center gap-2 text-gray-600 hover:text-navy-900 transition-colors"
-                >
-                  <LogIn className="w-4 h-4" />
-                  Sign In
-                </button>
-                <Link
-                  to="/register"
-                  className="px-4 py-2 bg-blue-900 text-white rounded-lg hover:bg-navy-800 transition-all text-sm"
-                >
-                  Create Account
-                </Link>
-              </>
+              <button
+                onClick={handleLoginRedirect}
+                className="p-2 text-gray-600 hover:text-navy-900 transition-colors"
+              >
+                <User className="w-5 h-5" />
+              </button>
             )}
+            <Link to="/cart" className="p-2 text-gray-600 hover:text-navy-900 transition-colors">
+              <ShoppingCart className="w-5 h-5" />
+            </Link>
           </div>
         </div>
       </nav>

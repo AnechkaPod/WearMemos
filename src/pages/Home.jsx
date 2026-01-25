@@ -112,7 +112,7 @@ export default function Home() {
                   </Link>
                 ) : (
                   <Link 
-                    to="/sign-in"
+                    to="/signin"
                     className="px-8 py-4 border-2 border-gray-200 text-gray-700 rounded-full hover:border-navy-900 hover:text-navy-900 transition-all"
                   >
                     Sign In

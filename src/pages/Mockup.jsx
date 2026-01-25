@@ -56,6 +56,8 @@ export default function Mockup() {
     const cartItem = {
       variantIds: selectedMockupData.variantIds,
       mockupUrl: selectedMockupData.mockupUrl,
+      patternUrl: selectedMockupData.patternUrl,
+      name: selectedMockupData.name,
       price: selectedMockupData.price,
       size: selectedSize,
       quantity,
@@ -70,11 +72,11 @@ export default function Mockup() {
   };
 
   const handleBuyNow = () => {
-
     console.log('selectedMockupData', selectedMockupData);
     const orderData = {
       variantIds: selectedMockupData.variantIds,
       mockupUrl: selectedMockupData.mockupUrl,
+      patternUrl: selectedMockupData.patternUrl,
       price: selectedMockupData.price,
       name: selectedMockupData.name,
       size: selectedSize,
@@ -84,16 +86,20 @@ export default function Mockup() {
     sessionStorage.setItem('checkoutData', JSON.stringify(orderData));
 
     if (!isLoggedIn) {
-      // Redirect to login, then back to checkout after login
-      navigate('/sign-in?redirect=/checkout');
+      // Show modal instead of redirecting directly
+      setShowLoginPrompt(true);
       return;
     }
 
     navigate('/checkout');
   };
 
+  const handleSignInFromModal = () => {
+    navigate('/signin?redirect=/checkout');
+  };
+
   const handleLoginRedirect = () => {
-    navigate('/sign-in?redirect=/mockup');
+    navigate('/signin?redirect=/mockup');
   };
 
   const handleBackToShop = () => {
@@ -163,20 +169,20 @@ export default function Mockup() {
               </div>
               <h3 className="text-2xl font-bold text-navy-900 mb-2">Ready to Order?</h3>
               <p className="text-gray-500 mb-6">
-                Sign in or create an account to complete your purchase.
+                Log in to your account or create a new one to complete your purchase.
               </p>
               <div className="space-y-3">
                 <button
-                  onClick={handleLoginRedirect}
+                  onClick={handleSignInFromModal}
                   className="w-full py-3 bg-navy-900 text-white rounded-xl font-medium hover:bg-navy-800 transition-all"
                 >
-                  Sign In
+                  Log In
                 </button>
                 <Link
-                  to="/Register?redirect=/mockup"
-                  className="block w-full py-3 border-2 border-gray-200 text-gray-700 rounded-xl font-medium hover:border-navy-900 hover:text-navy-900 transition-all"
+                  to="/register?redirect=/checkout"
+                  className="block w-full py-3 border-2 border-gray-200 text-gray-700 rounded-xl font-medium hover:border-navy-900 hover:text-navy-900 transition-all text-center"
                 >
-                  Create Account
+                  Create New Account
                 </Link>
                 <button
                   onClick={() => setShowLoginPrompt(false)}

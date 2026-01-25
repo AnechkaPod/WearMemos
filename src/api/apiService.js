@@ -87,7 +87,7 @@ class ApiService {
       return this.request('/patterns/generate', {
         method: 'POST',
         body: formData,
-        requiresAuth: true,
+       // requiresAuth: true,
       });
     },
   };

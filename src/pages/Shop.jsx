@@ -68,7 +68,7 @@ export default function Shop() {
             ) : (
               <>
                 <Link
-                  to="/sign-in"
+                  to="/signin"
                   className="flex items-center gap-2 text-gray-600 hover:text-navy-900 transition-colors"
                 >
                   <LogIn className="w-4 h-4" />

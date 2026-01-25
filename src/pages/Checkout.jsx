@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
@@ -8,9 +8,9 @@ import {
   ArrowRight,
   Loader2,
   Check,
-  MapPin,
   ShoppingBag
 } from 'lucide-react';
+import { PayPalButtons, usePayPalScriptReducer } from '@paypal/react-paypal-js';
 import AppLayout from '@/components/layout/AppLayout';
 import apiService from '@/api/apiService';
 
@@ -19,7 +19,9 @@ export default function Checkout() {
   const [orderData, setOrderData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(1);
-  
+  const [paymentError, setPaymentError] = useState(null);
+  const [{ isPending }] = usePayPalScriptReducer();
+
   const [shippingInfo, setShippingInfo] = useState({
     fullName: '',
     email: '',
@@ -29,13 +31,6 @@ export default function Checkout() {
     state: '',
     zipCode: '',
     country: 'United States'
-  });
-
-  const [paymentInfo, setPaymentInfo] = useState({
-    cardNumber: '',
-    expiry: '',
-    cvv: '',
-    nameOnCard: ''
   });
 
   useEffect(() => {
@@ -52,32 +47,103 @@ export default function Checkout() {
     setStep(2);
   };
 
-  const handlePaymentSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
+  // PayPal create order
+  const createOrder = (data, actions) => {
+    const subtotal = orderData.price * orderData.quantity;
+    const shippingCost = 5.99;
+    const total = subtotal + shippingCost;
+
+    return actions.order.create({
+      purchase_units: [
+        {
+          description: orderData.name || 'Custom Design Product',
+          amount: {
+            currency_code: 'USD',
+            value: total.toFixed(2),
+            breakdown: {
+              item_total: {
+                currency_code: 'USD',
+                value: subtotal.toFixed(2)
+              },
+              shipping: {
+                currency_code: 'USD',
+                value: shippingCost.toFixed(2)
+              }
+            }
+          },
+          items: [
+            {
+              name: orderData.name || 'Custom Design Product',
+              unit_amount: {
+                currency_code: 'USD',
+                value: orderData.price.toFixed(2)
+              },
+              quantity: orderData.quantity.toString()
+            }
+          ]
+        }
+      ],
+      application_context: {
+        shipping_preference: 'NO_SHIPPING'
+      }
+    });
+  };
+
+  // PayPal on approve (payment successful)
+  // IMPORTANT: Don't call setLoading before capture() - it causes re-render and breaks the popup
+  const onApprove = useCallback(async (data, actions) => {
+    setPaymentError(null);
 
     try {
-      const data = await apiService.orders.create({
+      // Capture the payment - don't set state before this completes!
+      const details = await actions.order.capture();
+      console.log('Payment completed:', details);
+       console.log('orderData:', orderData);
+      // NOW we can set loading state (after popup is done)
+      setLoading(true);
+
+      // TODO: Uncomment when backend is ready
+      const orderResponse = await apiService.orders.create({
+        // Product info
         variantIds: orderData.variantIds,
+        mockupUrl: orderData.mockupUrl,
+        patternUrl: orderData.patternUrl,
+        productName: orderData.name,
+        price: orderData.price,
         size: orderData.size,
         quantity: orderData.quantity,
+
+        // Shipping
         shippingInfo,
-        totalAmount: orderData.price * orderData.quantity + 5.99
+        shippingCost: 5.99,
+        totalAmount: orderData.price * orderData.quantity + 5.99,
+
+        // PayPal payment info
+        paypalOrderId: details.id,
+        paypalPayerId: details.payer.payer_id,
+        paymentStatus: details.status
       });
 
+      // For now, show success and clear checkout data
       sessionStorage.removeItem('checkoutData');
-      navigate(`/orders/${data.id}`);
+
+      // Navigate to a success page or orders page
+      alert(`Payment successful! Transaction ID: ${details.id}`);
+      navigate('/');
     } catch (err) {
-      console.error('Order error:', err);
-    } finally {
+      console.error('Order creation error:', err);
+      setPaymentError('Payment failed. Please try again.');
       setLoading(false);
     }
+  }, [navigate, orderData, shippingInfo]);
+
+  // PayPal on error
+  const onError = (err) => {
+    console.error('PayPal error:', err);
+    setPaymentError('Payment failed. Please try again.');
   };
 
   if (!orderData) return null;
-
-  console.log('orderData in Checkout:', orderData);
-
 
   const subtotal = orderData.price * orderData.quantity;
   const shipping = 5.99;
@@ -102,10 +168,10 @@ export default function Checkout() {
               <React.Fragment key={s.num}>
                 <div className={`flex items-center gap-2 ${step >= s.num ? 'text-navy-900' : 'text-gray-400'}`}>
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                    step > s.num 
-                      ? 'bg-green-500 text-white' 
-                      : step === s.num 
-                        ? 'bg-navy-900 text-white' 
+                    step > s.num
+                      ? 'bg-green-500 text-white'
+                      : step === s.num
+                        ? 'bg-navy-900 text-white'
                         : 'bg-gray-100'
                   }`}>
                     {step > s.num ? <Check className="w-4 h-4" /> : s.num}
@@ -255,106 +321,74 @@ export default function Checkout() {
               )}
 
               {step === 2 && (
-                <motion.form
+                <motion.div
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
-                  onSubmit={handlePaymentSubmit}
                   className="bg-white rounded-3xl shadow-xl shadow-gray-200/50 p-8"
                 >
                   <div className="flex items-center gap-3 mb-6">
                     <div className="w-10 h-10 rounded-xl bg-rose-100 flex items-center justify-center">
                       <CreditCard className="w-5 h-5 text-rose-600" />
                     </div>
-                    <h2 className="text-xl font-semibold text-navy-900">Payment Information</h2>
+                    <h2 className="text-xl font-semibold text-navy-900">Payment</h2>
                   </div>
 
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Card Number
-                      </label>
-                      <input
-                        type="text"
-                        value={paymentInfo.cardNumber}
-                        onChange={(e) => setPaymentInfo({ ...paymentInfo, cardNumber: e.target.value })}
-                        placeholder="1234 5678 9012 3456"
-                        className="w-full px-4 py-3 bg-cream-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500"
-                        required
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Expiry Date
-                        </label>
-                        <input
-                          type="text"
-                          value={paymentInfo.expiry}
-                          onChange={(e) => setPaymentInfo({ ...paymentInfo, expiry: e.target.value })}
-                          placeholder="MM/YY"
-                          className="w-full px-4 py-3 bg-cream-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500"
-                          required
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          CVV
-                        </label>
-                        <input
-                          type="text"
-                          value={paymentInfo.cvv}
-                          onChange={(e) => setPaymentInfo({ ...paymentInfo, cvv: e.target.value })}
-                          placeholder="123"
-                          className="w-full px-4 py-3 bg-cream-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500"
-                          required
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Name on Card
-                      </label>
-                      <input
-                        type="text"
-                        value={paymentInfo.nameOnCard}
-                        onChange={(e) => setPaymentInfo({ ...paymentInfo, nameOnCard: e.target.value })}
-                        className="w-full px-4 py-3 bg-cream-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500"
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2 mt-4 p-4 bg-green-50 rounded-xl">
+                  <div className="flex items-center gap-2 mb-6 p-4 bg-green-50 rounded-xl">
                     <Shield className="w-5 h-5 text-green-600" />
-                    <span className="text-sm text-green-700">Your payment is secure and encrypted</span>
+                    <span className="text-sm text-green-700">Your payment is secure and encrypted by PayPal</span>
                   </div>
 
-                  <div className="flex gap-4 mt-6">
+                  {paymentError && (
+                    <div className="mb-6 p-4 bg-red-50 text-red-700 rounded-xl text-sm">
+                      {paymentError}
+                    </div>
+                  )}
+
+                  {loading ? (
+                    <div className="flex items-center justify-center py-12">
+                      <Loader2 className="w-8 h-8 animate-spin text-navy-900" />
+                      <span className="ml-3 text-navy-900">Processing your order...</span>
+                    </div>
+                  ) : (
+                    <>
+                      {isPending ? (
+                        <div className="flex items-center justify-center py-12">
+                          <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
+                        </div>
+                      ) : (
+                        <div className="space-y-4">
+                          <p className="text-sm text-gray-600 mb-4">
+                            Choose your payment method. You can pay with PayPal or credit/debit card.
+                          </p>
+
+                          <PayPalButtons
+                            style={{
+                              layout: 'vertical',
+                              color: 'blue',
+                              shape: 'rect',
+                              label: 'pay',
+                              height: 50
+                            }}
+                            createOrder={createOrder}
+                            onApprove={onApprove}
+                            onError={onError}
+                            fundingSource={undefined}
+                          />
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  <div className="mt-6">
                     <button
                       type="button"
                       onClick={() => setStep(1)}
-                      className="px-6 py-4 border border-gray-200 text-gray-600 rounded-xl font-medium hover:bg-gray-50 transition-all"
+                      className="px-6 py-3 border border-gray-200 text-gray-600 rounded-xl font-medium hover:bg-gray-50 transition-all"
                     >
-                      Back
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={loading}
-                      className="flex-1 py-4 bg-navy-900 text-white rounded-xl font-medium hover:bg-navy-800 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
-                    >
-                      {loading ? (
-                        <Loader2 className="w-5 h-5 animate-spin" />
-                      ) : (
-                        <>
-                          Place Order - ${total.toFixed(2)}
-                          <ArrowRight className="w-5 h-5" />
-                        </>
-                      )}
+                      Back to Shipping
                     </button>
                   </div>
-                </motion.form>
+                </motion.div>
               )}
             </div>
 
@@ -362,7 +396,7 @@ export default function Checkout() {
             <div>
               <div className="bg-white rounded-3xl shadow-xl shadow-gray-200/50 p-6 sticky top-6">
                 <h3 className="text-lg font-semibold text-navy-900 mb-4">Order Summary</h3>
-                
+
                 <div className="flex gap-4 pb-4 border-b border-gray-100">
                   <div className="w-20 h-20 rounded-xl bg-gradient-to-br from-rose-100 to-amber-100 flex items-center justify-center overflow-hidden">
                     {orderData.mockupUrl ? (
