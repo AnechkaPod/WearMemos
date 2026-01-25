@@ -18,6 +18,8 @@ import MyDesigns from "./MyDesigns";
 
 import SignIn from "./SignIn";
 
+import Shop from "./Shop";
+
 import { BrowserRouter as Router, Route, Routes, useLocation } from 'react-router-dom';
 
 const PAGES = {
@@ -39,7 +41,9 @@ const PAGES = {
     MyDesigns: MyDesigns,
     
     SignIn: SignIn,
-    
+
+    Shop: Shop,
+
 }
 
 function _getCurrentPage(url) {
@@ -84,7 +88,9 @@ function PagesContent() {
                 <Route path="/MyDesigns" element={<MyDesigns />} />
                 
                 <Route path="/SignIn" element={<SignIn />} />
-                
+
+                <Route path="/Shop" element={<Shop />} />
+
             </Routes>
         </Layout>
     );

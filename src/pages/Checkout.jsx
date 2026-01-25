@@ -8,7 +8,8 @@ import {
   ArrowRight,
   Loader2,
   Check,
-  MapPin
+  MapPin,
+  ShoppingBag
 } from 'lucide-react';
 import AppLayout from '@/components/layout/AppLayout';
 import apiService from '@/api/apiService';
@@ -57,13 +58,11 @@ export default function Checkout() {
 
     try {
       const data = await apiService.orders.create({
-        designId: orderData.designId,
-        productType: orderData.product.id,
+        variantIds: orderData.variantIds,
         size: orderData.size,
-        color: orderData.color.id,
         quantity: orderData.quantity,
         shippingInfo,
-        totalAmount: orderData.product.price * orderData.quantity + 5.99
+        totalAmount: orderData.price * orderData.quantity + 5.99
       });
 
       sessionStorage.removeItem('checkoutData');
@@ -77,7 +76,10 @@ export default function Checkout() {
 
   if (!orderData) return null;
 
-  const subtotal = orderData.product.price * orderData.quantity;
+  console.log('orderData in Checkout:', orderData);
+
+
+  const subtotal = orderData.price * orderData.quantity;
   const shipping = 5.99;
   const total = subtotal + shipping;
 
@@ -362,17 +364,17 @@ export default function Checkout() {
                 <h3 className="text-lg font-semibold text-navy-900 mb-4">Order Summary</h3>
                 
                 <div className="flex gap-4 pb-4 border-b border-gray-100">
-                  <div className="w-20 h-20 rounded-xl bg-gradient-to-br from-rose-100 to-amber-100 flex items-center justify-center">
+                  <div className="w-20 h-20 rounded-xl bg-gradient-to-br from-rose-100 to-amber-100 flex items-center justify-center overflow-hidden">
                     {orderData.mockupUrl ? (
                       <img src={orderData.mockupUrl} alt="" className="w-full h-full object-cover rounded-xl" />
                     ) : (
-                      <orderData.product.icon className="w-8 h-8 text-rose-400" />
+                      <ShoppingBag className="w-8 h-8 text-rose-400" />
                     )}
                   </div>
                   <div>
-                    <p className="font-medium text-navy-900">{orderData.product.name}</p>
+                    <p className="font-medium text-navy-900">{orderData.name || 'Custom Design Product'}</p>
                     <p className="text-sm text-gray-500">
-                      {orderData.color.name} • {orderData.size && `Size ${orderData.size}`}
+                      {orderData.size && `Size ${orderData.size}`}
                     </p>
                     <p className="text-sm text-gray-500">Qty: {orderData.quantity}</p>
                   </div>

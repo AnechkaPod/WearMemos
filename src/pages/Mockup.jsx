@@ -1,129 +1,121 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams, Link } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   ShoppingBag,
-  Shirt,
-  Square,
-  Circle,
-  Check,
+  ShoppingCart,
   ArrowRight,
-  Loader2,
-  RotateCcw,
   Heart,
-  LogIn
+  LogIn,
+  ArrowLeft,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
-import apiService from '@/api/apiService';
 import { isAuthenticated } from '@/api/config';
 
-const products = [
-  { id: 'tshirt', name: 'T-Shirtt', icon: Shirt, price: 29.99 },
-  { id: 'hoodie', name: 'Hoodie', icon: Shirt, price: 49.99 },
-  { id: 'totebag', name: 'Tote Bag', icon: ShoppingBag, price: 24.99 },
-  { id: 'pillow', name: 'Pillow', icon: Square, price: 34.99 },
-  { id: 'coaster', name: 'Coaster Set', icon: Circle, price: 19.99 }
-];
-
-const sizes = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
-const colors = [
-  { id: 'white', name: 'White', hex: '#FFFFFF' },
-  { id: 'black', name: 'Black', hex: '#1a1a2e' },
-  { id: 'navy', name: 'Navy', hex: '#1e3a5f' },
-  { id: 'cream', name: 'Cream', hex: '#faf8f5' }
-];
+// 3 sizes for every product
+const sizes = ['S', 'M', 'L'];
 
 export default function Mockup() {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const designId = searchParams.get('designId');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
-
-  const [patternSettings] = useState({
-    layout: 'grid',
-    rotation: 0,
-    spacing: 'normal',
-    scale: 100
-  });
 
   // Load selected mockup data from sessionStorage
   // Data structure: { variantIds: [...], mockupUrl: "...", extraMockups: [...] }
   const selectedMockupData = JSON.parse(sessionStorage.getItem('selectedMockup') || '{}');
-  const mockupUrl = selectedMockupData.mockupUrl || sessionStorage.getItem('mockupUrl') || null;
 
-  const [selectedProduct, setSelectedProduct] = useState(products[0]);
   const [selectedSize, setSelectedSize] = useState('M');
-  const [selectedColor, setSelectedColor] = useState(colors[0]);
   const [quantity, setQuantity] = useState(1);
-  const [generating, setGenerating] = useState(false);
-  const [currentMockup, setCurrentMockup] = useState(mockupUrl);
-  const [mockupDetails, setMockupDetails] = useState(null);
-  const [loadingDetails, setLoadingDetails] = useState(false);
-  const [variantIds, setVariantIds] = useState(selectedMockupData.variantIds || []);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  // Get all images (main mockup + extra mockups)
+  const getAllImages = () => {
+    const images = [{ title: 'Main', url: selectedMockupData.mockupUrl }];
+    if (selectedMockupData.extraMockups && selectedMockupData.extraMockups.length > 0) {
+      images.push(...selectedMockupData.extraMockups);
+    }
+    return images;
+  };
+
+  const images = getAllImages();
+
+  const nextImage = () => {
+    setCurrentImageIndex((prev) => (prev + 1) % images.length);
+  };
+
+  const prevImage = () => {
+    setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length);
+  };
 
   useEffect(() => {
     setIsLoggedIn(isAuthenticated());
-
-    // Fetch mockup details if we have selected mockup data
-    const fetchMockupDetails = async () => {
-      const storedData = JSON.parse(sessionStorage.getItem('selectedMockup') || '{}');
-      if (!storedData.mockupUrl) return;
-
-      setLoadingDetails(true);
-      // try {
-      //   const data = await apiService.mockups.getDetails(storedData);
-      //   console.log('mockup details', data);
-      //   setMockupDetails(data);
-      // } catch (err) {
-      //   console.error('Error fetching mockup details:', err);
-      // } finally {
-      //   setLoadingDetails(false);
-      // }
-    };
-
-    fetchMockupDetails();
   }, []);
 
-  const regenerateMockup = async () => {
-    setGenerating(true);
+  const handleAddToBasket = () => {
+    const cartItem = {
+      variantIds: selectedMockupData.variantIds,
+      mockupUrl: selectedMockupData.mockupUrl,
+      price: selectedMockupData.price,
+      size: selectedSize,
+      quantity,
+    };
 
-    try {
-      const data = await apiService.mockups.generate(
-        designId,
-        selectedProduct.id,
-        { ...patternSettings, color: selectedColor.id }
-      );
-      setCurrentMockup(data.mockupUrl);
-    } catch (err) {
-      console.error('Mockup error:', err);
-    } finally {
-      setGenerating(false);
-    }
+    // Get existing cart or create new one
+    const existingCart = JSON.parse(sessionStorage.getItem('cart') || '[]');
+    existingCart.push(cartItem);
+    sessionStorage.setItem('cart', JSON.stringify(existingCart));
+
+    alert('Added to basket!');
   };
 
-  const proceedToCheckout = () => {
+  const handleBuyNow = () => {
+
+    console.log('selectedMockupData', selectedMockupData);
     const orderData = {
-      designId,
-      product: selectedProduct,
+      variantIds: selectedMockupData.variantIds,
+      mockupUrl: selectedMockupData.mockupUrl,
+      price: selectedMockupData.price,
+      name: selectedMockupData.name,
       size: selectedSize,
-      color: selectedColor,
       quantity,
-      mockupUrl: currentMockup
     };
+    console.log('orderData', orderData);
     sessionStorage.setItem('checkoutData', JSON.stringify(orderData));
-    
-    // If not logged in, prompt to login
+
     if (!isLoggedIn) {
-      setShowLoginPrompt(true);
+      // Redirect to login, then back to checkout after login
+      navigate('/sign-in?redirect=/checkout');
       return;
     }
-    
+
     navigate('/checkout');
   };
 
   const handleLoginRedirect = () => {
-    navigate('/sign-in?redirect=/mockup' + (designId ? `?designId=${designId}` : ''));
+    navigate('/sign-in?redirect=/mockup');
   };
+
+  const handleBackToShop = () => {
+    navigate('/design');
+  };
+
+  // If no mockup data, show empty state
+  if (!selectedMockupData.mockupUrl) {
+    return (
+      <div className="min-h-screen bg-cream-50 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-500 mb-4">No product selected</p>
+          <button
+            onClick={() => navigate('/design')}
+            className="px-6 py-3 bg-navy-900 text-white rounded-xl hover:bg-navy-800 transition-all"
+          >
+            Go to Design
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-cream-50">
@@ -145,15 +137,13 @@ export default function Mockup() {
                 </Link>
               </>
             ) : (
-              <>
-                <button
-                  onClick={handleLoginRedirect}
-                  className="flex items-center gap-2 text-gray-600 hover:text-navy-900 transition-colors"
-                >
-                  <LogIn className="w-4 h-4" />
-                  Sign In
-                </button>
-              </>
+              <button
+                onClick={handleLoginRedirect}
+                className="flex items-center gap-2 text-gray-600 hover:text-navy-900 transition-colors"
+              >
+                <LogIn className="w-4 h-4" />
+                Sign In
+              </button>
             )}
           </div>
         </div>
@@ -201,115 +191,114 @@ export default function Mockup() {
       )}
 
       <div className="p-6 lg:p-10 max-w-7xl mx-auto">
+        {/* Back Button */}
+        <button
+          onClick={handleBackToShop}
+          className="flex items-center gap-2 text-gray-600 hover:text-navy-900 transition-colors mb-6"
+        >
+          <ArrowLeft className="w-5 h-5" />
+          Back to Shop
+        </button>
+
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <h1 className="text-3xl font-bold text-navy-900 mb-2">Product Preview</h1>
-          <p className="text-gray-500 mb-8">Customize your product and see the final result</p>
-
           <div className="grid lg:grid-cols-2 gap-10">
-            {/* Mockup Preview */}
-            <div className="relative">
-              <div className="aspect-square rounded-3xl bg-white shadow-xl shadow-gray-200/50 overflow-hidden p-8">
-                {generating ? (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <div className="text-center">
-                      <Loader2 className="w-10 h-10 text-rose-500 animate-spin mx-auto mb-4" />
-                      <p className="text-gray-500">Generating preview...</p>
-                    </div>
-                  </div>
-                ) : currentMockup ? (
-                  <img
-                    src={currentMockup}
-                    alt="Product mockup"
-                    className="w-full h-full object-contain"
-                  />
-                ) : (
-                  <div className="w-full h-full bg-gradient-to-br from-rose-100 to-amber-100 rounded-2xl flex items-center justify-center">
-                    <selectedProduct.icon className="w-32 h-32 text-rose-300" />
+            {/* Product Image Gallery */}
+            <div className="space-y-4">
+              {/* Main Image */}
+              <div className="relative aspect-square rounded-3xl bg-white shadow-xl shadow-gray-200/50 overflow-hidden">
+                <img
+                  src={images[currentImageIndex].url}
+                  alt={images[currentImageIndex].title}
+                  className="w-full h-full object-contain p-8"
+                />
+
+                {/* Navigation Arrows */}
+                {images.length > 1 && (
+                  <>
+                    <button
+                      onClick={prevImage}
+                      className="absolute left-4 top-1/2 -translate-y-1/2 p-3 bg-white/90 rounded-full shadow-lg hover:bg-white transition-colors"
+                    >
+                      <ChevronLeft className="w-6 h-6 text-navy-900" />
+                    </button>
+                    <button
+                      onClick={nextImage}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 p-3 bg-white/90 rounded-full shadow-lg hover:bg-white transition-colors"
+                    >
+                      <ChevronRight className="w-6 h-6 text-navy-900" />
+                    </button>
+                  </>
+                )}
+
+                {/* Image Counter & Title */}
+                {images.length > 1 && (
+                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/60 text-white text-sm px-4 py-2 rounded-full">
+                    {images[currentImageIndex].title} ({currentImageIndex + 1}/{images.length})
                   </div>
                 )}
               </div>
-              
-              <button
-                onClick={regenerateMockup}
-                className="absolute top-4 right-4 p-3 bg-white rounded-xl shadow-lg hover:shadow-xl transition-all"
-              >
-                <RotateCcw className="w-5 h-5 text-gray-600" />
-              </button>
-            </div>
 
-            {/* Options Panel */}
-            <div className="space-y-8">
-              {/* Product Selection */}
-              {/* <div>
-                <h3 className="text-lg font-semibold text-navy-900 mb-4">Select Product</h3>
-                <div className="grid grid-cols-3 gap-3">
-                  {products.map((product) => (
+              {/* Thumbnails */}
+              {images.length > 1 && (
+                <div className="flex gap-3 overflow-x-auto pb-2">
+                  {images.map((img, idx) => (
                     <button
-                      key={product.id}
-                      onClick={() => setSelectedProduct(product)}
-                      className={`p-4 rounded-xl border-2 transition-all ${
-                        selectedProduct.id === product.id
-                          ? 'border-rose-500 bg-rose-50'
-                          : 'border-gray-100 hover:border-gray-200 bg-white'
+                      key={idx}
+                      onClick={() => setCurrentImageIndex(idx)}
+                      className={`flex-shrink-0 w-20 h-20 rounded-xl overflow-hidden border-2 transition-all ${
+                        idx === currentImageIndex
+                          ? 'border-rose-500 ring-2 ring-rose-200'
+                          : 'border-gray-200 hover:border-gray-300'
                       }`}
                     >
-                      <product.icon className={`w-8 h-8 mx-auto mb-2 ${
-                        selectedProduct.id === product.id ? 'text-rose-500' : 'text-gray-400'
-                      }`} />
-                      <p className="text-sm font-medium text-navy-900">{product.name}</p>
-                      <p className="text-xs text-gray-500">${product.price}</p>
+                      <img
+                        src={img.url}
+                        alt={img.title}
+                        className="w-full h-full object-cover"
+                      />
                     </button>
                   ))}
                 </div>
-              </div> */}
+              )}
+            </div>
+
+            {/* Product Details */}
+            <div className="space-y-6">
+              <div>
+                <h1 className="text-3xl font-bold text-navy-900 mb-2">
+                  {selectedMockupData.name || 'Custom Design Product'}
+                </h1>
+                <p className="text-gray-500">Your unique design printed on high-quality apparel</p>
+                {selectedMockupData.price && (
+                  <p className="text-2xl font-bold text-navy-900 mt-4">
+                    ${(selectedMockupData.price * quantity).toFixed(2)}
+                    {quantity > 1 && (
+                      <span className="text-sm font-normal text-gray-500 ml-2">
+                        (${selectedMockupData.price.toFixed(2)} each)
+                      </span>
+                    )}
+                  </p>
+                )}
+              </div>
 
               {/* Size Selection */}
-              {['tshirt', 'hoodie'].includes(selectedProduct.id) && (
-                <div>
-                  <h3 className="text-lg font-semibold text-navy-900 mb-4">Select Size</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {sizes.map((size) => (
-                      <button
-                        key={size}
-                        onClick={() => setSelectedSize(size)}
-                        className={`w-12 h-12 rounded-xl border-2 font-medium transition-all ${
-                          selectedSize === size
-                            ? 'border-rose-500 bg-rose-500 text-white'
-                            : 'border-gray-100 hover:border-gray-200 text-gray-600'
-                        }`}
-                      >
-                        {size}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Color Selection */}
               <div>
-                <h3 className="text-lg font-semibold text-navy-900 mb-4">Select Color</h3>
-                <div className="flex gap-3">
-                  {colors.map((color) => (
+                <h3 className="text-lg font-semibold text-navy-900 mb-4">Select Size</h3>
+                <div className="flex flex-wrap gap-3">
+                  {sizes.map((size) => (
                     <button
-                      key={color.id}
-                      onClick={() => setSelectedColor(color)}
-                      className={`w-12 h-12 rounded-xl border-2 transition-all flex items-center justify-center ${
-                        selectedColor.id === color.id
-                          ? 'border-rose-500 scale-110'
-                          : 'border-gray-200'
+                      key={size}
+                      onClick={() => setSelectedSize(size)}
+                      className={`w-14 h-14 rounded-xl border-2 font-medium transition-all ${
+                        selectedSize === size
+                          ? 'border-rose-500 bg-rose-500 text-white'
+                          : 'border-gray-200 hover:border-gray-300 text-gray-600 bg-white'
                       }`}
-                      style={{ backgroundColor: color.hex }}
                     >
-                      {selectedColor.id === color.id && (
-                        <Check className={`w-5 h-5 ${
-                          color.id === 'white' || color.id === 'cream' 
-                            ? 'text-navy-900' 
-                            : 'text-white'
-                        }`} />
-                      )}
+                      {size}
                     </button>
                   ))}
                 </div>
@@ -321,7 +310,7 @@ export default function Mockup() {
                 <div className="flex items-center gap-4">
                   <button
                     onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                    className="w-12 h-12 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors text-xl"
+                    className="w-12 h-12 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors text-xl bg-white"
                   >
                     -
                   </button>
@@ -330,27 +319,31 @@ export default function Mockup() {
                   </span>
                   <button
                     onClick={() => setQuantity(quantity + 1)}
-                    className="w-12 h-12 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors text-xl"
+                    className="w-12 h-12 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors text-xl bg-white"
                   >
                     +
                   </button>
                 </div>
               </div>
 
-              {/* Total & Checkout */}
-              <div className="pt-6 border-t border-gray-100">
-                <div className="flex items-center justify-between mb-4">
-                  <span className="text-gray-500">Total</span>
-                  <span className="text-2xl font-bold text-navy-900">
-                    ${(selectedProduct.price * quantity).toFixed(2)}
-                  </span>
-                </div>
+              {/* Actions */}
+              <div className="pt-6 border-t border-gray-100 space-y-4">
+                {/* Buy Now Button */}
                 <button
-                  onClick={proceedToCheckout}
-                  className="w-full py-4 bg-navy-900 text-white rounded-xl font-medium hover:bg-navy-800 transition-all hover:shadow-lg flex items-center justify-center gap-2"
+                  onClick={handleBuyNow}
+                  className="w-full py-4 bg-rose-500 text-white rounded-xl font-semibold hover:bg-rose-600 transition-all hover:shadow-lg flex items-center justify-center gap-2 text-lg"
                 >
-                  Proceed to Checkout
+                  Buy Now
                   <ArrowRight className="w-5 h-5" />
+                </button>
+
+                {/* Add to Basket Button */}
+                <button
+                  onClick={handleAddToBasket}
+                  className="w-full py-4 bg-white border-2 border-navy-900 text-navy-900 rounded-xl font-semibold hover:bg-navy-50 transition-all flex items-center justify-center gap-2"
+                >
+                  <ShoppingCart className="w-5 h-5" />
+                  Add to Basket
                 </button>
               </div>
             </div>
