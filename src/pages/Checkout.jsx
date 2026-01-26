@@ -13,10 +13,11 @@ import {
 import { PayPalButtons, usePayPalScriptReducer } from '@paypal/react-paypal-js';
 import AppLayout from '@/components/layout/AppLayout';
 import apiService from '@/api/apiService';
+import useCartStore from '@/stores/useCartStore';
 
 export default function Checkout() {
   const navigate = useNavigate();
-  const [orderData, setOrderData] = useState(null);
+  const { checkoutData: orderData, clearCheckoutData } = useCartStore();
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(1);
   const [paymentError, setPaymentError] = useState(null);
@@ -34,13 +35,10 @@ export default function Checkout() {
   });
 
   useEffect(() => {
-    const stored = sessionStorage.getItem('checkoutData');
-    if (stored) {
-      setOrderData(JSON.parse(stored));
-    } else {
+    if (!orderData) {
       navigate('/design');
     }
-  }, []);
+  }, [orderData, navigate]);
 
   const handleShippingSubmit = (e) => {
     e.preventDefault();
@@ -125,7 +123,7 @@ export default function Checkout() {
       });
 
       // For now, show success and clear checkout data
-      sessionStorage.removeItem('checkoutData');
+      clearCheckoutData();
 
       // Navigate to a success page or orders page
       alert(`Payment successful! Transaction ID: ${details.id}`);
@@ -135,7 +133,7 @@ export default function Checkout() {
       setPaymentError('Payment failed. Please try again.');
       setLoading(false);
     }
-  }, [navigate, orderData, shippingInfo]);
+  }, [navigate, orderData, shippingInfo, clearCheckoutData]);
 
   // PayPal on error
   const onError = (err) => {

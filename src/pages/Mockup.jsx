@@ -12,6 +12,7 @@ import {
   ChevronRight
 } from 'lucide-react';
 import { isAuthenticated } from '@/api/config';
+import useCartStore from '@/stores/useCartStore';
 
 // 3 sizes for every product
 const sizes = ['S', 'M', 'L'];
@@ -52,6 +53,8 @@ export default function Mockup() {
     setIsLoggedIn(isAuthenticated());
   }, []);
 
+  const { addToCart, setCheckoutData } = useCartStore();
+
   const handleAddToBasket = () => {
     const cartItem = {
       variantIds: selectedMockupData.variantIds,
@@ -63,11 +66,7 @@ export default function Mockup() {
       quantity,
     };
 
-    // Get existing cart or create new one
-    const existingCart = JSON.parse(sessionStorage.getItem('cart') || '[]');
-    existingCart.push(cartItem);
-    sessionStorage.setItem('cart', JSON.stringify(existingCart));
-
+    addToCart(cartItem);
     alert('Added to basket!');
   };
 
@@ -83,7 +82,7 @@ export default function Mockup() {
       quantity,
     };
     console.log('orderData', orderData);
-    sessionStorage.setItem('checkoutData', JSON.stringify(orderData));
+    setCheckoutData(orderData);
 
     if (!isLoggedIn) {
       // Show modal instead of redirecting directly

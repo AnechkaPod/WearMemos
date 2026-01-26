@@ -3,34 +3,26 @@ import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Heart, User, ShoppingCart, Trash2, ArrowRight, ShoppingBag } from 'lucide-react';
 import { isAuthenticated } from '@/api/config';
+import useCartStore from '@/stores/useCartStore';
 
 export default function Cart() {
   const navigate = useNavigate();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [cartItems, setCartItems] = useState([]);
+
+  const {
+    cartItems,
+    removeFromCart,
+    updateQuantity: updateCartQuantity,
+    setCheckoutData
+  } = useCartStore();
 
   useEffect(() => {
     setIsLoggedIn(isAuthenticated());
-
-    // Load cart from sessionStorage
-    const stored = sessionStorage.getItem('cart');
-    if (stored) {
-      setCartItems(JSON.parse(stored));
-    }
   }, []);
 
-  const removeItem = (index) => {
-    const newCart = cartItems.filter((_, i) => i !== index);
-    setCartItems(newCart);
-    sessionStorage.setItem('cart', JSON.stringify(newCart));
-  };
-
-  const updateQuantity = (index, newQuantity) => {
+  const handleUpdateQuantity = (index, newQuantity) => {
     if (newQuantity < 1) return;
-    const newCart = [...cartItems];
-    newCart[index].quantity = newQuantity;
-    setCartItems(newCart);
-    sessionStorage.setItem('cart', JSON.stringify(newCart));
+    updateCartQuantity(index, newQuantity);
   };
 
   const handleCheckout = () => {
@@ -38,7 +30,7 @@ export default function Cart() {
 
     // For now, checkout with the first item (can be expanded later for multi-item checkout)
     const firstItem = cartItems[0];
-    sessionStorage.setItem('checkoutData', JSON.stringify(firstItem));
+    setCheckoutData(firstItem);
 
     if (!isLoggedIn) {
       navigate('/signin?redirect=/checkout');
@@ -145,21 +137,21 @@ export default function Cart() {
                     </div>
                     <div className="flex flex-col items-end justify-between">
                       <button
-                        onClick={() => removeItem(index)}
+                        onClick={() => removeFromCart(index)}
                         className="p-2 text-gray-400 hover:text-red-500 transition-colors"
                       >
                         <Trash2 className="w-5 h-5" />
                       </button>
                       <div className="flex items-center gap-2">
                         <button
-                          onClick={() => updateQuantity(index, item.quantity - 1)}
+                          onClick={() => handleUpdateQuantity(index, item.quantity - 1)}
                           className="w-8 h-8 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50"
                         >
                           -
                         </button>
                         <span className="w-8 text-center font-medium">{item.quantity}</span>
                         <button
-                          onClick={() => updateQuantity(index, item.quantity + 1)}
+                          onClick={() => handleUpdateQuantity(index, item.quantity + 1)}
                           className="w-8 h-8 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50"
                         >
                           +
