@@ -53,7 +53,9 @@ export default function Mockup() {
     setIsLoggedIn(isAuthenticated());
   }, []);
 
-  const { addToCart, setCheckoutData } = useCartStore();
+  const { addToCart, setCheckoutData, cartItems } = useCartStore();
+
+  const cartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
   const handleAddToBasket = () => {
     const cartItem = {
@@ -67,7 +69,7 @@ export default function Mockup() {
     };
 
     addToCart(cartItem);
-    alert('Added to basket!');
+    navigate('/shop');
   };
 
   const handleBuyNow = () => {
@@ -150,6 +152,14 @@ export default function Mockup() {
                 Sign In
               </button>
             )}
+            <Link to="/cart" className="relative p-2 text-gray-600 hover:text-navy-900 transition-colors">
+              <ShoppingCart className="w-5 h-5" />
+              {cartCount > 0 && (
+                <span className="absolute -top-1 -right-1 w-5 h-5 bg-rose-500 text-white text-xs rounded-full flex items-center justify-center font-medium">
+                  {cartCount > 99 ? '99+' : cartCount}
+                </span>
+              )}
+            </Link>
           </div>
         </div>
       </nav>

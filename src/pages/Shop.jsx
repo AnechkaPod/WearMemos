@@ -3,11 +3,15 @@ import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Heart, LogIn, FolderOpen, ArrowLeft, ShoppingCart } from 'lucide-react';
 import { isAuthenticated } from '@/api/config';
+import useCartStore from '@/stores/useCartStore';
 
 export default function Shop() {
   const navigate = useNavigate();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [mockups, setMockups] = useState([]);
+  const { cartItems } = useCartStore();
+
+  const cartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
   useEffect(() => {
     setIsLoggedIn(isAuthenticated());
@@ -82,6 +86,14 @@ export default function Shop() {
                 </Link>
               </>
             )}
+            <Link to="/cart" className="relative p-2 text-gray-600 hover:text-navy-900 transition-colors">
+              <ShoppingCart className="w-5 h-5" />
+              {cartCount > 0 && (
+                <span className="absolute -top-1 -right-1 w-5 h-5 bg-rose-500 text-white text-xs rounded-full flex items-center justify-center font-medium">
+                  {cartCount > 99 ? '99+' : cartCount}
+                </span>
+              )}
+            </Link>
           </div>
         </div>
       </nav>

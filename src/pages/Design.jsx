@@ -5,9 +5,13 @@ import { Loader2, Heart, User, FolderOpen, ShoppingCart } from 'lucide-react';
 import ArtworkUploader from '@/components/design/ArtworkUploader';
 import apiService from '@/api/apiService';
 import { isAuthenticated } from '@/api/config';
+import useCartStore from '@/stores/useCartStore';
 
 export default function Design() {
   const navigate = useNavigate();
+  const { cartItems } = useCartStore();
+
+  const cartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
   const [generating, setGenerating] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -92,8 +96,13 @@ export default function Design() {
                 <User className="w-5 h-5" />
               </button>
             )}
-            <Link to="/cart" className="p-2 text-gray-600 hover:text-navy-900 transition-colors">
+            <Link to="/cart" className="relative p-2 text-gray-600 hover:text-navy-900 transition-colors">
               <ShoppingCart className="w-5 h-5" />
+              {cartCount > 0 && (
+                <span className="absolute -top-1 -right-1 w-5 h-5 bg-rose-500 text-white text-xs rounded-full flex items-center justify-center font-medium">
+                  {cartCount > 99 ? '99+' : cartCount}
+                </span>
+              )}
             </Link>
           </div>
         </div>

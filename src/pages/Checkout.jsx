@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
@@ -17,7 +17,7 @@ import useCartStore from '@/stores/useCartStore';
 
 export default function Checkout() {
   const navigate = useNavigate();
-  const { checkoutData: orderData, clearCheckoutData } = useCartStore();
+  const { cartItems, clearCart } = useCartStore();
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(1);
   const [paymentError, setPaymentError] = useState(null);
@@ -34,27 +34,45 @@ export default function Checkout() {
     country: 'United States'
   });
 
+  // Use ref to avoid re-creating onApprove callback when shippingInfo changes
+  const shippingInfoRef = useRef(shippingInfo);
+  shippingInfoRef.current = shippingInfo;
+
+  // Use ref for cartItems to avoid stale closure
+  const cartItemsRef = useRef(cartItems);
+  cartItemsRef.current = cartItems;
+
+  // Calculate totals from cart items
+  const subtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const shippingCost = 5.99;
+  const total = subtotal + shippingCost;
+
   useEffect(() => {
-    if (!orderData) {
+    if (cartItems.length === 0) {
       navigate('/design');
     }
-  }, [orderData, navigate]);
+  }, [cartItems, navigate]);
 
   const handleShippingSubmit = (e) => {
     e.preventDefault();
     setStep(2);
   };
 
-  // PayPal create order
+  // PayPal create order - include all cart items
   const createOrder = (data, actions) => {
-    const subtotal = orderData.price * orderData.quantity;
-    const shippingCost = 5.99;
-    const total = subtotal + shippingCost;
+    const items = cartItems.map(item => ({
+      name: item.name || 'Custom Design Product',
+      unit_amount: {
+        currency_code: 'USD',
+        value: item.price.toFixed(2)
+      },
+      quantity: item.quantity.toString()
+    }));
 
     return actions.order.create({
       purchase_units: [
         {
-          description: orderData.name || 'Custom Design Product',
+          description: `Order with ${cartItems.length} item(s)`,
           amount: {
             currency_code: 'USD',
             value: total.toFixed(2),
@@ -69,16 +87,7 @@ export default function Checkout() {
               }
             }
           },
-          items: [
-            {
-              name: orderData.name || 'Custom Design Product',
-              unit_amount: {
-                currency_code: 'USD',
-                value: orderData.price.toFixed(2)
-              },
-              quantity: orderData.quantity.toString()
-            }
-          ]
+          items
         }
       ],
       application_context: {
@@ -88,33 +97,54 @@ export default function Checkout() {
   };
 
   // PayPal on approve (payment successful)
-  // IMPORTANT: Don't call setLoading before capture() - it causes re-render and breaks the popup
   const onApprove = useCallback(async (data, actions) => {
     setPaymentError(null);
 
     try {
-      // Capture the payment - don't set state before this completes!
       const details = await actions.order.capture();
       console.log('Payment completed:', details);
-       console.log('orderData:', orderData);
-      // NOW we can set loading state (after popup is done)
+
       setLoading(true);
 
-      // TODO: Uncomment when backend is ready
-      const orderResponse = await apiService.orders.create({
-        // Product info
-        variantIds: orderData.variantIds,
-        mockupUrl: orderData.mockupUrl,
-        patternUrl: orderData.patternUrl,
-        productName: orderData.name,
-        price: orderData.price,
-        size: orderData.size,
-        quantity: orderData.quantity,
+      // Get current cart items from ref
+      const currentCartItems = cartItemsRef.current;
+      const currentSubtotal = currentCartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
-        // Shipping
-        shippingInfo,
+      console.log('Order request body:', JSON.stringify({
+        items: currentCartItems.map(item => ({
+          variantIds: item.variantIds,
+          mockupUrl: item.mockupUrl,
+          patternUrl: item.patternUrl,
+          productName: item.name,
+          price: item.price,
+          size: item.size,
+          quantity: item.quantity,
+        })),
+        shippingInfo: shippingInfoRef.current,
         shippingCost: 5.99,
-        totalAmount: orderData.price * orderData.quantity + 5.99,
+        totalAmount: currentSubtotal + 5.99,
+        paypalOrderId: details.id,
+        paypalPayerId: details.payer.payer_id,
+        paymentStatus: details.status
+      }, null, 2));
+
+      // Send order to backend with all cart items
+      await apiService.orders.create({
+        // Array of all items in the order
+        items: currentCartItems.map(item => ({
+          variantIds: item.variantIds,
+          mockupUrl: item.mockupUrl,
+          patternUrl: item.patternUrl,
+          productName: item.name,
+          price: item.price,
+          size: item.size,
+          quantity: item.quantity,
+        })),
+
+        // Shipping info
+        shippingInfo: shippingInfoRef.current,
+        shippingCost: 5.99,
+        totalAmount: currentSubtotal + 5.99,
 
         // PayPal payment info
         paypalOrderId: details.id,
@@ -122,18 +152,22 @@ export default function Checkout() {
         paymentStatus: details.status
       });
 
-      // For now, show success and clear checkout data
-      clearCheckoutData();
+      console.log('Order created successfully');
 
-      // Navigate to a success page or orders page
+      // Clear cart and navigate
+      clearCart();
       alert(`Payment successful! Transaction ID: ${details.id}`);
       navigate('/');
+
+      return details;
     } catch (err) {
       console.error('Order creation error:', err);
       setPaymentError('Payment failed. Please try again.');
+      throw err;
+    } finally {
       setLoading(false);
     }
-  }, [navigate, orderData, shippingInfo, clearCheckoutData]);
+  }, [navigate, clearCart]);
 
   // PayPal on error
   const onError = (err) => {
@@ -141,11 +175,7 @@ export default function Checkout() {
     setPaymentError('Payment failed. Please try again.');
   };
 
-  if (!orderData) return null;
-
-  const subtotal = orderData.price * orderData.quantity;
-  const shipping = 5.99;
-  const total = subtotal + shipping;
+  if (cartItems.length === 0) return null;
 
   return (
     <AppLayout>
@@ -395,31 +425,38 @@ export default function Checkout() {
               <div className="bg-white rounded-3xl shadow-xl shadow-gray-200/50 p-6 sticky top-6">
                 <h3 className="text-lg font-semibold text-navy-900 mb-4">Order Summary</h3>
 
-                <div className="flex gap-4 pb-4 border-b border-gray-100">
-                  <div className="w-20 h-20 rounded-xl bg-gradient-to-br from-rose-100 to-amber-100 flex items-center justify-center overflow-hidden">
-                    {orderData.mockupUrl ? (
-                      <img src={orderData.mockupUrl} alt="" className="w-full h-full object-cover rounded-xl" />
-                    ) : (
-                      <ShoppingBag className="w-8 h-8 text-rose-400" />
-                    )}
-                  </div>
-                  <div>
-                    <p className="font-medium text-navy-900">{orderData.name || 'Custom Design Product'}</p>
-                    <p className="text-sm text-gray-500">
-                      {orderData.size && `Size ${orderData.size}`}
-                    </p>
-                    <p className="text-sm text-gray-500">Qty: {orderData.quantity}</p>
-                  </div>
+                {/* List all cart items */}
+                <div className="space-y-4 pb-4 border-b border-gray-100 max-h-80 overflow-y-auto">
+                  {cartItems.map((item, index) => (
+                    <div key={index} className="flex gap-4">
+                      <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-rose-100 to-amber-100 flex items-center justify-center overflow-hidden flex-shrink-0">
+                        {item.mockupUrl ? (
+                          <img src={item.mockupUrl} alt="" className="w-full h-full object-cover rounded-xl" />
+                        ) : (
+                          <ShoppingBag className="w-6 h-6 text-rose-400" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-navy-900 text-sm truncate">{item.name || 'Custom Design Product'}</p>
+                        <p className="text-xs text-gray-500">
+                          {item.size && `Size ${item.size}`} · Qty: {item.quantity}
+                        </p>
+                        <p className="text-sm font-semibold text-rose-500">
+                          ${(item.price * item.quantity).toFixed(2)}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
 
                 <div className="py-4 space-y-2 border-b border-gray-100">
                   <div className="flex justify-between text-gray-600">
-                    <span>Subtotal</span>
+                    <span>Subtotal ({cartItems.length} item{cartItems.length !== 1 ? 's' : ''})</span>
                     <span>${subtotal.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-gray-600">
                     <span>Shipping</span>
-                    <span>${shipping.toFixed(2)}</span>
+                    <span>${shippingCost.toFixed(2)}</span>
                   </div>
                 </div>
 

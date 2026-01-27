@@ -12,8 +12,7 @@ export default function Cart() {
   const {
     cartItems,
     removeFromCart,
-    updateQuantity: updateCartQuantity,
-    setCheckoutData
+    updateQuantity: updateCartQuantity
   } = useCartStore();
 
   useEffect(() => {
@@ -27,10 +26,6 @@ export default function Cart() {
 
   const handleCheckout = () => {
     if (cartItems.length === 0) return;
-
-    // For now, checkout with the first item (can be expanded later for multi-item checkout)
-    const firstItem = cartItems[0];
-    setCheckoutData(firstItem);
 
     if (!isLoggedIn) {
       navigate('/signin?redirect=/checkout');
