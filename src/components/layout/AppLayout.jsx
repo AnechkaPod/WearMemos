@@ -13,7 +13,7 @@ import {
 
 const navItems = [
   { path: '/design', label: 'New Design', icon: Palette },
-  { path: '/my-designs', label: 'My Designs', icon: Upload },
+  { path: '/mydesigns', label: 'My Designs', icon: Upload },
   { path: '/orders', label: 'Orders', icon: Package }
 ];
 

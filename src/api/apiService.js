@@ -152,6 +152,14 @@ class ApiService {
       });
     },
 
+    calculateShipping: async (data) => {
+      return this.request('/orders/calculate-shipping', {
+        method: 'POST',
+        body: JSON.stringify(data),
+        // No auth required - users need to see shipping before logging in
+      });
+    },
+
     getAll: async () => {
       return this.request('/orders', {
         method: 'GET',

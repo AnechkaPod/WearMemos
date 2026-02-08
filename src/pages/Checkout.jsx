@@ -15,12 +15,34 @@ import AppLayout from '@/components/layout/AppLayout';
 import apiService from '@/api/apiService';
 import useCartStore from '@/stores/useCartStore';
 
+// Countries with ISO codes for shipping
+const COUNTRIES = [
+  { code: 'US', name: 'United States' },
+  { code: 'CA', name: 'Canada' },
+  { code: 'GB', name: 'United Kingdom' },
+  { code: 'AU', name: 'Australia' },
+  { code: 'DE', name: 'Germany' },
+  { code: 'FR', name: 'France' },
+  { code: 'IT', name: 'Italy' },
+  { code: 'ES', name: 'Spain' },
+  { code: 'NL', name: 'Netherlands' },
+  { code: 'BE', name: 'Belgium' },
+  { code: 'AT', name: 'Austria' },
+  { code: 'IE', name: 'Ireland' },
+  { code: 'NZ', name: 'New Zealand' },
+  { code: 'JP', name: 'Japan' },
+  { code: 'MX', name: 'Mexico' },
+];
+
 export default function Checkout() {
   const navigate = useNavigate();
   const { cartItems, clearCart } = useCartStore();
   const [loading, setLoading] = useState(false);
+  const [calculatingShipping, setCalculatingShipping] = useState(false);
   const [step, setStep] = useState(1);
   const [paymentError, setPaymentError] = useState(null);
+  const [shippingOptions, setShippingOptions] = useState([]);
+  const [selectedShipping, setSelectedShipping] = useState(null);
   const [{ isPending }] = usePayPalScriptReducer();
 
   const [shippingInfo, setShippingInfo] = useState({
@@ -31,7 +53,8 @@ export default function Checkout() {
     city: '',
     state: '',
     zipCode: '',
-    country: 'United States'
+    country: 'United States',
+    countryCode: 'US'
   });
 
   // Use ref to avoid re-creating onApprove callback when shippingInfo changes
@@ -42,10 +65,15 @@ export default function Checkout() {
   const cartItemsRef = useRef(cartItems);
   cartItemsRef.current = cartItems;
 
+  // Use ref for selected shipping to avoid stale closure in PayPal callbacks
+  const selectedShippingRef = useRef(selectedShipping);
+  selectedShippingRef.current = selectedShipping;
+
   // Calculate totals from cart items
   const subtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  const shippingCost = 5.99;
-  const total = subtotal + shippingCost;
+  // Handle both camelCase and PascalCase from C# API
+  const shippingCost = selectedShipping ? (selectedShipping.rate ?? selectedShipping.Rate) : null;
+  const total = shippingCost !== null ? subtotal + shippingCost : subtotal;
 
   useEffect(() => {
     if (cartItems.length === 0) {
@@ -53,13 +81,72 @@ export default function Checkout() {
     }
   }, [cartItems, navigate]);
 
-  const handleShippingSubmit = (e) => {
+  const handleShippingSubmit = async (e) => {
     e.preventDefault();
-    setStep(2);
+    setCalculatingShipping(true);
+    setPaymentError(null);
+
+    try {
+      // Call API to calculate shipping based on cart items and address
+      console.log('Calculating shipping for:', {
+        items: cartItems.map(item => ({
+          variantIds: item.variantIds,
+          quantity: item.quantity,
+        })),
+        shippingAddress: {
+          address: shippingInfo.address,
+          city: shippingInfo.city,
+          state: shippingInfo.state,
+          zipCode: shippingInfo.zipCode,
+          country: shippingInfo.country,
+          countryCode: shippingInfo.countryCode,
+        }
+      });
+      const response = await apiService.orders.calculateShipping({
+        items: cartItems.map(item => ({
+          variantIds: item.variantIds,
+          quantity: item.quantity,
+        })),
+        shippingAddress: {
+          address: shippingInfo.address,
+          city: shippingInfo.city,
+          state: shippingInfo.state,
+          zipCode: shippingInfo.zipCode,
+          country: shippingInfo.country,
+          countryCode: shippingInfo.countryCode,
+        }
+      });
+
+      console.log('Shipping calculation response:', response);
+
+      // Store shipping options and auto-select the cheapest one
+      // Handle both camelCase (options) and PascalCase (Options) from C# API
+      const options = response.options || response.Options || [];
+      setShippingOptions(options);
+      if (options.length > 0) {
+        // Use cheapestRate from API or find the cheapest option manually
+        const cheapestRate = response.cheapestRate || response.CheapestRate;
+        const cheapest = cheapestRate
+          ? options.find(opt => (opt.rate || opt.Rate) === cheapestRate) || options[0]
+          : options.reduce((min, opt) =>
+              (opt.rate || opt.Rate) < (min.rate || min.Rate) ? opt : min, options[0]);
+        setSelectedShipping(cheapest);
+      }
+      setStep(2);
+    } catch (err) {
+      console.error('Shipping calculation error:', err);
+      setPaymentError('Could not calculate shipping. Please check your address and try again.');
+    } finally {
+      setCalculatingShipping(false);
+    }
   };
 
   // PayPal create order - include all cart items
   const createOrder = (data, actions) => {
+    const currentShipping = selectedShippingRef.current;
+    const currentShippingCost = currentShipping?.rate ?? currentShipping?.Rate ?? 0;
+    const currentTotal = subtotal + currentShippingCost;
+
     const items = cartItems.map(item => ({
       name: item.name || 'Custom Design Product',
       unit_amount: {
@@ -75,7 +162,7 @@ export default function Checkout() {
           description: `Order with ${cartItems.length} item(s)`,
           amount: {
             currency_code: 'USD',
-            value: total.toFixed(2),
+            value: currentTotal.toFixed(2),
             breakdown: {
               item_total: {
                 currency_code: 'USD',
@@ -83,7 +170,7 @@ export default function Checkout() {
               },
               shipping: {
                 currency_code: 'USD',
-                value: shippingCost.toFixed(2)
+                value: currentShippingCost.toFixed(2)
               }
             }
           },
@@ -110,6 +197,12 @@ export default function Checkout() {
       const currentCartItems = cartItemsRef.current;
       const currentSubtotal = currentCartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
+      const currentShipping = selectedShippingRef.current;
+      // Handle both camelCase and PascalCase from C# API
+      const currentShippingCost = currentShipping?.rate ?? currentShipping?.Rate ?? 0;
+      const currentShippingId = currentShipping?.id || currentShipping?.Id;
+      const currentShippingName = currentShipping?.name || currentShipping?.Name;
+
       console.log('Order request body:', JSON.stringify({
         items: currentCartItems.map(item => ({
           variantIds: item.variantIds,
@@ -121,8 +214,10 @@ export default function Checkout() {
           quantity: item.quantity,
         })),
         shippingInfo: shippingInfoRef.current,
-        shippingCost: 5.99,
-        totalAmount: currentSubtotal + 5.99,
+        shippingOptionId: currentShippingId,
+        shippingOptionName: currentShippingName,
+        shippingCost: currentShippingCost,
+        totalAmount: currentSubtotal + currentShippingCost,
         paypalOrderId: details.id,
         paypalPayerId: details.payer.payer_id,
         paymentStatus: details.status
@@ -143,8 +238,10 @@ export default function Checkout() {
 
         // Shipping info
         shippingInfo: shippingInfoRef.current,
-        shippingCost: 5.99,
-        totalAmount: currentSubtotal + 5.99,
+        shippingOptionId: currentShippingId,
+        shippingOptionName: currentShippingName,
+        shippingCost: currentShippingCost,
+        totalAmount: currentSubtotal + currentShippingCost,
 
         // PayPal payment info
         paypalOrderId: details.id,
@@ -190,8 +287,9 @@ export default function Checkout() {
           {/* Progress Steps */}
           <div className="flex items-center gap-4 mb-10">
             {[
-              { num: 1, label: 'Shipping' },
-              { num: 2, label: 'Payment' }
+              { num: 1, label: 'Address' },
+              { num: 2, label: 'Shipping' },
+              { num: 3, label: 'Payment' }
             ].map((s, index) => (
               <React.Fragment key={s.num}>
                 <div className={`flex items-center gap-2 ${step >= s.num ? 'text-navy-900' : 'text-gray-400'}`}>
@@ -204,10 +302,10 @@ export default function Checkout() {
                   }`}>
                     {step > s.num ? <Check className="w-4 h-4" /> : s.num}
                   </div>
-                  <span className="font-medium">{s.label}</span>
+                  <span className="font-medium hidden sm:inline">{s.label}</span>
                 </div>
-                {index < 1 && (
-                  <div className={`flex-1 h-0.5 ${step > 1 ? 'bg-green-500' : 'bg-gray-200'}`} />
+                {index < 2 && (
+                  <div className={`flex-1 h-0.5 ${step > s.num ? 'bg-green-500' : 'bg-gray-200'}`} />
                 )}
               </React.Fragment>
             ))}
@@ -327,28 +425,138 @@ export default function Checkout() {
                         Country
                       </label>
                       <select
-                        value={shippingInfo.country}
-                        onChange={(e) => setShippingInfo({ ...shippingInfo, country: e.target.value })}
+                        value={shippingInfo.countryCode}
+                        onChange={(e) => {
+                          const selected = COUNTRIES.find(c => c.code === e.target.value);
+                          setShippingInfo({
+                            ...shippingInfo,
+                            country: selected?.name || e.target.value,
+                            countryCode: e.target.value
+                          });
+                        }}
                         className="w-full px-4 py-3 bg-cream-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500"
                       >
-                        <option>United States</option>
-                        <option>Canada</option>
-                        <option>United Kingdom</option>
+                        {COUNTRIES.map((country) => (
+                          <option key={country.code} value={country.code}>
+                            {country.name}
+                          </option>
+                        ))}
                       </select>
                     </div>
                   </div>
 
+                  {paymentError && (
+                    <div className="mt-4 p-4 bg-red-50 text-red-700 rounded-xl text-sm">
+                      {paymentError}
+                    </div>
+                  )}
+
                   <button
                     type="submit"
-                    className="mt-6 w-full py-4 bg-blue-900 text-white rounded-xl font-medium hover:bg-navy-800 transition-all flex items-center justify-center gap-2"
+                    disabled={calculatingShipping}
+                    className="mt-6 w-full py-4 bg-blue-900 text-white rounded-xl font-medium hover:bg-navy-800 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Continue to Payment
-                    <ArrowRight className="w-5 h-5" />
+                    {calculatingShipping ? (
+                      <>
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        Calculating Shipping Options...
+                      </>
+                    ) : (
+                      <>
+                        Continue to Shipping
+                        <ArrowRight className="w-5 h-5" />
+                      </>
+                    )}
                   </button>
                 </motion.form>
               )}
 
               {step === 2 && (
+                <motion.div
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  className="bg-white rounded-3xl shadow-xl shadow-gray-200/50 p-8"
+                >
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="w-10 h-10 rounded-xl bg-rose-100 flex items-center justify-center">
+                      <Truck className="w-5 h-5 text-rose-600" />
+                    </div>
+                    <h2 className="text-xl font-semibold text-navy-900">Choose Shipping Method</h2>
+                  </div>
+
+                  <div className="space-y-3">
+                    {shippingOptions.map((option) => {
+                      // Handle both camelCase and PascalCase from C# API
+                      const id = option.id || option.Id;
+                      const name = option.name || option.Name;
+                      const rate = option.rate ?? option.Rate;
+                      const minDays = option.minDeliveryDays ?? option.MinDeliveryDays;
+                      const maxDays = option.maxDeliveryDays ?? option.MaxDeliveryDays;
+                      const selectedId = selectedShipping?.id || selectedShipping?.Id;
+
+                      return (
+                        <button
+                          key={id}
+                          type="button"
+                          onClick={() => setSelectedShipping(option)}
+                          className={`w-full p-4 rounded-xl border-2 text-left transition-all ${
+                            selectedId === id
+                              ? 'border-rose-500 bg-rose-50'
+                              : 'border-gray-200 hover:border-gray-300'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="font-medium text-navy-900">{name}</p>
+                              <p className="text-sm text-gray-500">
+                                {minDays === maxDays
+                                  ? `${minDays} business days`
+                                  : `${minDays}-${maxDays} business days`
+                                }
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <span className="text-lg font-semibold text-navy-900">
+                                ${rate.toFixed(2)}
+                              </span>
+                              <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                                selectedId === id
+                                  ? 'border-rose-500 bg-rose-500'
+                                  : 'border-gray-300'
+                              }`}>
+                                {selectedId === id && (
+                                  <Check className="w-3 h-3 text-white" />
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <div className="mt-6 flex gap-4">
+                    <button
+                      type="button"
+                      onClick={() => setStep(1)}
+                      className="px-6 py-3 border border-gray-200 text-gray-600 rounded-xl font-medium hover:bg-gray-50 transition-all"
+                    >
+                      Back
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setStep(3)}
+                      disabled={!selectedShipping}
+                     className="mt-6 w-full py-4 bg-blue-900 text-white rounded-xl font-medium hover:bg-navy-800 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Continue to Payment
+                      <ArrowRight className="w-5 h-5" />
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+
+              {step === 3 && (
                 <motion.div
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
@@ -410,7 +618,7 @@ export default function Checkout() {
                   <div className="mt-6">
                     <button
                       type="button"
-                      onClick={() => setStep(1)}
+                      onClick={() => setStep(2)}
                       className="px-6 py-3 border border-gray-200 text-gray-600 rounded-xl font-medium hover:bg-gray-50 transition-all"
                     >
                       Back to Shipping
@@ -455,14 +663,29 @@ export default function Checkout() {
                     <span>${subtotal.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-gray-600">
-                    <span>Shipping</span>
-                    <span>${shippingCost.toFixed(2)}</span>
+                    <div>
+                      <span>Shipping</span>
+                      {selectedShipping && (
+                        <p className="text-xs text-gray-400">{selectedShipping.name || selectedShipping.Name}</p>
+                      )}
+                    </div>
+                    <span>
+                      {selectedShipping
+                        ? `$${(selectedShipping.rate ?? selectedShipping.Rate).toFixed(2)}`
+                        : <span className="text-gray-400 italic text-sm">Enter address to calculate</span>
+                      }
+                    </span>
                   </div>
                 </div>
 
                 <div className="pt-4 flex justify-between text-lg font-semibold text-navy-900">
                   <span>Total</span>
-                  <span>${total.toFixed(2)}</span>
+                  <span>
+                    {selectedShipping
+                      ? `$${total.toFixed(2)}`
+                      : <span className="text-gray-400 italic">--</span>
+                    }
+                  </span>
                 </div>
               </div>
             </div>

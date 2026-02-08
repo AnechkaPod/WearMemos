@@ -136,7 +136,7 @@ export default function Mockup() {
           <div className="flex items-center gap-4">
             {isLoggedIn ? (
               <>
-                <Link to="/my-designs" className="text-gray-600 hover:text-navy-900 transition-colors">
+                <Link to="/mydesigns" className="text-gray-600 hover:text-navy-900 transition-colors">
                   My Designs
                 </Link>
                 <Link to="/orders" className="text-gray-600 hover:text-navy-900 transition-colors">

@@ -1,19 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowRight, Sparkles, Palette, Package, Heart, User, FolderOpen } from 'lucide-react';
+import { ArrowRight, Sparkles, Palette, Package, Heart, LogOut, FolderOpen, ShoppingCart } from 'lucide-react';
+import { isAuthenticated, clearAuthData } from '@/api/config';
+import useCartStore from '@/stores/useCartStore';
 
 export default function Home() {
   const navigate = useNavigate();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const { cartItems } = useCartStore();
+
+  const cartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
   useEffect(() => {
-    console.log('isLoggedIn',isLoggedIn);
-    const token = localStorage.getItem('token');
-    console.log('token',token);
-  //setIsLoggedIn(!!token);
-    console.log('!!token',!!token);
+    setIsLoggedIn(isAuthenticated());
   }, []);
+
+  const handleLogout = () => {
+    clearAuthData();
+    setIsLoggedIn(false);
+  };
 
   const features = [
     {
@@ -45,11 +51,18 @@ export default function Home() {
           <div className="flex items-center gap-6">
             {isLoggedIn ? (
               <>
-                <Link to="/my-designs" className="flex items-center gap-2 text-gray-600 hover:text-navy-900 transition-colors">
+                <Link to="/mydesigns" className="flex items-center gap-2 text-gray-600 hover:text-navy-900 transition-colors">
                   <FolderOpen className="w-4 h-4" />
                   My Designs
                 </Link>
-                <Link 
+                <button
+                  onClick={handleLogout}
+                  className="flex items-center gap-2 text-gray-600 hover:text-navy-900 transition-colors"
+                >
+                  <LogOut className="w-4 h-4" />
+                  Sign Out
+                </button>
+                <Link
                   to="/design"
                   className="px-5 py-2.5 bg-blue-900 text-white rounded-full hover:bg-navy-800 transition-all hover:shadow-lg"
                 >
@@ -61,7 +74,7 @@ export default function Home() {
                 <Link to="/signin" className="text-gray-600 hover:text-navy-900 transition-colors">
                   Sign In
                 </Link>
-                <Link 
+                <Link
                   to="/design"
                   className="px-5 py-2.5 bg-blue-900 text-white rounded-full hover:bg-navy-800 transition-all hover:shadow-lg"
                 >
@@ -69,6 +82,14 @@ export default function Home() {
                 </Link>
               </>
             )}
+            <Link to="/cart" className="relative p-2 text-gray-600 hover:text-navy-900 transition-colors">
+              <ShoppingCart className="w-5 h-5" />
+              {cartCount > 0 && (
+                <span className="absolute -top-1 -right-1 w-5 h-5 bg-rose-500 text-white text-xs rounded-full flex items-center justify-center font-medium">
+                  {cartCount > 99 ? '99+' : cartCount}
+                </span>
+              )}
+            </Link>
           </div>
         </div>
       </nav>
@@ -104,8 +125,8 @@ export default function Home() {
                   <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </Link>
                 {isLoggedIn ? (
-                  <Link 
-                    to="/my-designs"
+                  <Link
+                    to="/mydesigns"
                     className="px-8 py-4 border-2 border-gray-200 text-gray-700 rounded-full hover:border-navy-900 hover:text-navy-900 transition-all"
                   >
                     My Designs
@@ -225,9 +246,14 @@ export default function Home() {
             <Heart className="w-5 h-5 text-rose-500 fill-rose-500" />
             <span className="font-semibold text-navy-900">Wear Memories</span>
           </div>
-          <p className="text-gray-500 text-sm">
-            © 2024 Wear Memories. All rights reserved.
-          </p>
+          <div className="flex items-center gap-6">
+            <Link to="/contact" className="text-gray-500 hover:text-navy-900 text-sm transition-colors">
+              Contact Us
+            </Link>
+            <p className="text-gray-500 text-sm">
+              © 2024 Wear Memories. All rights reserved.
+            </p>
+          </div>
         </div>
       </footer>
     </div>

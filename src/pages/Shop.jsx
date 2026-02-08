@@ -61,7 +61,7 @@ export default function Shop() {
           <div className="flex items-center gap-4">
             {isLoggedIn ? (
               <>
-                <Link to="/my-designs" className="flex items-center gap-2 text-gray-600 hover:text-navy-900 transition-colors">
+                <Link to="/mydesigns" className="flex items-center gap-2 text-gray-600 hover:text-navy-900 transition-colors">
                   <FolderOpen className="w-4 h-4" />
                   My Designs
                 </Link>

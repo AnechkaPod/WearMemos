@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Heart, User, ShoppingCart, Trash2, ArrowRight, ShoppingBag } from 'lucide-react';
-import { isAuthenticated } from '@/api/config';
+import { Heart, User, LogOut, ShoppingCart, Trash2, ArrowRight, ShoppingBag } from 'lucide-react';
+import { isAuthenticated, clearAuthData } from '@/api/config';
 import useCartStore from '@/stores/useCartStore';
 
 export default function Cart() {
@@ -40,8 +40,6 @@ export default function Cart() {
   };
 
   const subtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  const shipping = cartItems.length > 0 ? 5.99 : 0;
-  const total = subtotal + shipping;
 
   return (
     <div className="min-h-screen bg-cream-50">
@@ -53,7 +51,18 @@ export default function Cart() {
             <span className="text-xl font-bold text-navy-900">Wear Memories</span>
           </Link>
           <div className="flex items-center gap-4">
-            {!isLoggedIn && (
+            {isLoggedIn ? (
+              <button
+                onClick={() => {
+                  clearAuthData();
+                  setIsLoggedIn(false);
+                }}
+                className="flex items-center gap-2 text-gray-600 hover:text-navy-900 transition-colors"
+              >
+                <LogOut className="w-5 h-5" />
+                Logout
+              </button>
+            ) : (
               <button
                 onClick={handleLoginRedirect}
                 className="p-2 text-gray-600 hover:text-navy-900 transition-colors"
@@ -169,18 +178,19 @@ export default function Cart() {
                     </div>
                     <div className="flex justify-between text-gray-600">
                       <span>Shipping</span>
-                      <span>${shipping.toFixed(2)}</span>
+                      <span className="text-gray-400 italic text-sm">Calculated at checkout</span>
                     </div>
                   </div>
 
                   <div className="pt-4 flex justify-between text-lg font-semibold text-navy-900 mb-6">
-                    <span>Total</span>
-                    <span>${total.toFixed(2)}</span>
+                    <span>Subtotal</span>
+                    <span>${subtotal.toFixed(2)}</span>
                   </div>
 
                   <button
                     onClick={handleCheckout}
-                    className="w-full py-4 bg-navy-900 text-white rounded-xl font-medium hover:bg-navy-800 transition-all flex items-center justify-center gap-2"
+                     className="mt-6 w-full py-4 bg-blue-900 text-white rounded-xl font-medium hover:bg-navy-800 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+
                   >
                     Proceed to Checkout
                     <ArrowRight className="w-5 h-5" />
