@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Heart, Mail, Send, MessageCircle, Clock, CheckCircle } from 'lucide-react';
+import { Mail, Send, MessageCircle, Clock, CheckCircle } from 'lucide-react';
+import logo from '@/assets/icons/ThreadLogo2.png';
 
 export default function Contact() {
   const [formData, setFormData] = useState({
@@ -33,8 +34,7 @@ export default function Contact() {
       <nav className="bg-white/80 backdrop-blur-md border-b border-gray-100 px-6 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
-            <Heart className="w-7 h-7 text-rose-500 fill-rose-500" />
-            <span className="text-xl font-bold text-navy-900">Wear Memories</span>
+            <img src={logo} alt="Wear Memories" className="h-10 w-auto" />
           </Link>
           <Link
             to="/design"
@@ -218,8 +218,7 @@ export default function Contact() {
       <footer className="py-12 px-6 border-t border-gray-100 mt-12">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <Heart className="w-5 h-5 text-rose-500 fill-rose-500" />
-            <span className="font-semibold text-navy-900">Wear Memories</span>
+            <img src={logo} alt="Wear Memories" className="h-8 w-auto" />
           </div>
           <p className="text-gray-500 text-sm">
             © 2024 Wear Memories. All rights reserved.

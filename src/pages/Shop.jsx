@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Heart, LogIn, FolderOpen, ArrowLeft, ShoppingCart } from 'lucide-react';
+import { LogIn, FolderOpen, ArrowLeft, ShoppingCart } from 'lucide-react';
+import logo from '@/assets/icons/ThreadLogo2.png';
 import { isAuthenticated } from '@/api/config';
 import useCartStore from '@/stores/useCartStore';
 
@@ -55,8 +56,7 @@ export default function Shop() {
       <nav className="bg-white border-b border-gray-100 px-6 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
-            <Heart className="w-7 h-7 text-rose-500 fill-rose-500" />
-            <span className="text-xl font-bold text-navy-900">Wear Memories</span>
+            <img src={logo} alt="Wear Memories" className="h-10 w-auto" />
           </Link>
           <div className="flex items-center gap-4">
             {isLoggedIn ? (

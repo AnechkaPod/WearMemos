@@ -24,6 +24,8 @@ import Cart from "./Cart";
 
 import Contact from "./Contact";
 
+import ThankYou from "./ThankYou";
+
 import { BrowserRouter as Router, Route, Routes, useLocation } from 'react-router-dom';
 
 const PAGES = {
@@ -51,6 +53,8 @@ const PAGES = {
     Cart: Cart,
 
     Contact: Contact,
+
+    ThankYou: ThankYou,
 
 }
 
@@ -102,6 +106,8 @@ function PagesContent() {
                 <Route path="/Cart" element={<Cart />} />
 
                 <Route path="/Contact" element={<Contact />} />
+
+                <Route path="/ThankYou" element={<ThankYou />} />
 
             </Routes>
         </Layout>

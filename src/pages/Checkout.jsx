@@ -15,25 +15,6 @@ import AppLayout from '@/components/layout/AppLayout';
 import apiService from '@/api/apiService';
 import useCartStore from '@/stores/useCartStore';
 
-// Countries with ISO codes for shipping
-const COUNTRIES = [
-  { code: 'US', name: 'United States' },
-  { code: 'CA', name: 'Canada' },
-  { code: 'GB', name: 'United Kingdom' },
-  { code: 'AU', name: 'Australia' },
-  { code: 'DE', name: 'Germany' },
-  { code: 'FR', name: 'France' },
-  { code: 'IT', name: 'Italy' },
-  { code: 'ES', name: 'Spain' },
-  { code: 'NL', name: 'Netherlands' },
-  { code: 'BE', name: 'Belgium' },
-  { code: 'AT', name: 'Austria' },
-  { code: 'IE', name: 'Ireland' },
-  { code: 'NZ', name: 'New Zealand' },
-  { code: 'JP', name: 'Japan' },
-  { code: 'MX', name: 'Mexico' },
-];
-
 export default function Checkout() {
   const navigate = useNavigate();
   const { cartItems, clearCart } = useCartStore();
@@ -43,6 +24,8 @@ export default function Checkout() {
   const [paymentError, setPaymentError] = useState(null);
   const [shippingOptions, setShippingOptions] = useState([]);
   const [selectedShipping, setSelectedShipping] = useState(null);
+  const [countries, setCountries] = useState([]);
+  const [loadingCountries, setLoadingCountries] = useState(true);
   const [{ isPending }] = usePayPalScriptReducer();
 
   const [shippingInfo, setShippingInfo] = useState({
@@ -80,6 +63,65 @@ export default function Checkout() {
       navigate('/design');
     }
   }, [cartItems, navigate]);
+
+  // Fetch shipping countries on mount
+useEffect(() => {
+  const fetchCountries = async () => {
+    try {
+      setLoadingCountries(true); // ← Add this!
+      
+      const data = await apiService.orders.getShippingCountries();
+      
+      console.log('Raw countries data:', data); // ← Debug log
+      
+      // Handle both camelCase and PascalCase from C# API
+      const normalizedCountries = (Array.isArray(data.countries
+) ? data.countries
+ : []).map(c => ({
+        code: c.code || c.Code,
+        name: c.name || c.Name
+      }));
+      
+      console.log('Normalized countries:', normalizedCountries); // ← Debug log
+      
+      setCountries(normalizedCountries);
+
+      // Set default to US (or first country if US not found)
+      if (normalizedCountries.length > 0) {
+        const defaultCountry = normalizedCountries.find(c => c.code === 'US') 
+                            || normalizedCountries[0];
+        
+        setShippingInfo(prev => ({
+          ...prev,
+          country: defaultCountry.name,
+          countryCode: defaultCountry.code
+        }));
+      }
+    } catch (err) {
+      console.error('Failed to fetch shipping countries:', err);
+      
+      // Fallback to a few common countries
+      const fallbackCountries = [
+        { code: 'US', name: 'United States' },
+        { code: 'CA', name: 'Canada' },
+        { code: 'GB', name: 'United Kingdom' }
+      ];
+      
+      setCountries(fallbackCountries);
+      
+      // Set US as default
+      setShippingInfo(prev => ({
+        ...prev,
+        country: 'United States',
+        countryCode: 'US'
+      }));
+    } finally {
+      setLoadingCountries(false);
+    }
+  };
+  
+  fetchCountries();
+}, []); // ← Empty array is correct - only fetch once on mount
 
   const handleShippingSubmit = async (e) => {
     e.preventDefault();
@@ -224,7 +266,7 @@ export default function Checkout() {
       }, null, 2));
 
       // Send order to backend with all cart items
-      await apiService.orders.create({
+      const orderResponse = await apiService.orders.create({
         // Array of all items in the order
         items: currentCartItems.map(item => ({
           variantIds: item.variantIds,
@@ -249,12 +291,25 @@ export default function Checkout() {
         paymentStatus: details.status
       });
 
-      console.log('Order created successfully');
+      console.log('Order created successfully:', orderResponse);
 
-      // Clear cart and navigate
+      // Prepare order details for thank you page
+      const orderDetails = {
+        orderId: orderResponse?.id || orderResponse?.Id || details.id,
+        orderNumber: orderResponse?.orderNumber || orderResponse?.OrderNumber,
+        items: currentCartItems,
+        shippingInfo: shippingInfoRef.current,
+        shippingMethod: currentShippingName,
+        shippingCost: currentShippingCost,
+        subtotal: currentSubtotal,
+        total: currentSubtotal + currentShippingCost,
+        paypalTransactionId: details.id,
+        orderDate: new Date().toISOString()
+      };
+
+      // Clear cart and navigate to thank you page with order details
       clearCart();
-      alert(`Payment successful! Transaction ID: ${details.id}`);
-      navigate('/');
+      navigate('/thankyou', { state: { orderDetails } });
 
       return details;
     } catch (err) {
@@ -427,7 +482,7 @@ export default function Checkout() {
                       <select
                         value={shippingInfo.countryCode}
                         onChange={(e) => {
-                          const selected = COUNTRIES.find(c => c.code === e.target.value);
+                          const selected = countries.find(c => c.code === e.target.value);
                           setShippingInfo({
                             ...shippingInfo,
                             country: selected?.name || e.target.value,
@@ -436,11 +491,15 @@ export default function Checkout() {
                         }}
                         className="w-full px-4 py-3 bg-cream-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500"
                       >
-                        {COUNTRIES.map((country) => (
-                          <option key={country.code} value={country.code}>
-                            {country.name}
-                          </option>
-                        ))}
+                        {loadingCountries ? (
+                          <option value="">Loading countries...</option>
+                        ) : (
+                          countries.map((country) => (
+                            <option key={country.code} value={country.code}>
+                              {country.name}
+                            </option>
+                          ))
+                        )}
                       </select>
                     </div>
                   </div>

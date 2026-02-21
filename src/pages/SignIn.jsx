@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Heart, Mail, Lock, ArrowRight, Loader2 } from 'lucide-react';
+import { Mail, Lock, ArrowRight, Loader2 } from 'lucide-react';
+import logo from '@/assets/icons/ThreadLogo2.png';
 import apiService from '@/api/apiService';
 import { setAuthData } from '@/api/config';
 
@@ -20,6 +21,7 @@ export default function SignIn() {
     setError('');
 
     try {
+      console.log('Attempting login with:', formData);  
       const data = await apiService.auth.login(formData.email, formData.password);
 
       setAuthData(data.token, data.user);
@@ -65,8 +67,7 @@ export default function SignIn() {
       >
         {/* Logo */}
         <Link to="/" className="flex items-center justify-center gap-2 mb-8">
-          <Heart className="w-8 h-8 text-rose-500 fill-rose-500" />
-          <span className="text-2xl font-bold text-navy-900">Wear Memories</span>
+          <img src={logo} alt="Wear Memories" className="h-12 w-auto" />
         </Link>
 
         {/* Card */}

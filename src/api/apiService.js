@@ -26,9 +26,14 @@ class ApiService {
     if (config.body && !(config.body instanceof FormData)) {
       config.headers['Content-Type'] = 'application/json';
     }
-
     const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
-    const data = await response.json();
+
+    let data;
+    try {
+        data = await response.json();
+    } catch {
+        data = {};
+    }
 
     if (!response.ok) {
       throw new Error(data.message || `Request failed with status ${response.status}`);
@@ -145,6 +150,12 @@ class ApiService {
   // Order endpoints
   orders = {
     create: async (orderData) => {
+       const token = localStorage.getItem('token');
+        console.log('=== ORDER CREATE DEBUG ===');
+        console.log('Token exists:', !!token);
+        console.log('Token value:', token);
+        console.log('Order data:', orderData);
+        console.log('=========================');
       return this.request('/orders', {
         method: 'POST',
         body: JSON.stringify(orderData),
@@ -159,7 +170,12 @@ class ApiService {
         // No auth required - users need to see shipping before logging in
       });
     },
-
+getShippingCountries: async () => {
+      return this.request('/countries/shipping-countries', {
+        method: 'GET',
+        // No auth required - public data
+      });
+    },
     getAll: async () => {
       return this.request('/orders', {
         method: 'GET',

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowRight, Sparkles, Palette, Package, Heart, LogOut, FolderOpen, ShoppingCart } from 'lucide-react';
+import { ArrowRight, Sparkles, Palette, Package, LogOut, FolderOpen, ShoppingCart } from 'lucide-react';
+import logo from '@/assets/icons/ThreadLogo2.png';
 import { isAuthenticated, clearAuthData } from '@/api/config';
 import useCartStore from '@/stores/useCartStore';
 
@@ -45,8 +46,7 @@ export default function Home() {
       <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Heart className="w-6 h-6 text-rose-500 fill-rose-500" />
-            <span className="text-xl font-semibold text-navy-900">Wear Memories</span>
+            <img src={logo} alt="Wear Memories" className="h-10 w-auto" />
           </div>
           <div className="flex items-center gap-6">
             {isLoggedIn ? (
@@ -243,8 +243,7 @@ export default function Home() {
       <footer className="py-12 px-6 border-t border-gray-100">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <Heart className="w-5 h-5 text-rose-500 fill-rose-500" />
-            <span className="font-semibold text-navy-900">Wear Memories</span>
+            <img src={logo} alt="Wear Memories" className="h-8 w-auto" />
           </div>
           <div className="flex items-center gap-6">
             <Link to="/contact" className="text-gray-500 hover:text-navy-900 text-sm transition-colors">

@@ -1,15 +1,14 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { 
-  Heart, 
-  Upload, 
-  Palette, 
-  Package, 
-  Settings, 
+import {
+  Upload,
+  Palette,
+  Package,
   LogOut,
   Menu,
   X
 } from 'lucide-react';
+import logo from '@/assets/icons/ThreadLogo2.png';
 
 const navItems = [
   { path: '/design', label: 'New Design', icon: Palette },
@@ -33,9 +32,8 @@ export default function AppLayout({ children }) {
       {/* Mobile Header */}
       <header className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-100 px-4 py-3">
         <div className="flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2">
-            <Heart className="w-6 h-6 text-rose-500 fill-rose-500" />
-            <span className="font-semibold text-navy-900">Wear Memories</span>
+          <Link to="/">
+            <img src={logo} alt="Wear Memories" className="h-8 w-auto" />
           </Link>
           <button 
             onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -56,9 +54,8 @@ export default function AppLayout({ children }) {
         <div className="flex flex-col h-full">
           {/* Logo */}
           <div className="p-6 border-b border-gray-100">
-            <Link to="/" className="flex items-center gap-2">
-              <Heart className="w-8 h-8 text-rose-500 fill-rose-500" />
-              <span className="text-xl font-bold text-navy-900">Wear Memories</span>
+            <Link to="/">
+              <img src={logo} alt="Wear Memories" className="h-10 w-auto" />
             </Link>
           </div>
 

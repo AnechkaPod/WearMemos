@@ -5,12 +5,12 @@ import {
   ShoppingBag,
   ShoppingCart,
   ArrowRight,
-  Heart,
   LogIn,
   ArrowLeft,
   ChevronLeft,
   ChevronRight
 } from 'lucide-react';
+import logo from '@/assets/icons/ThreadLogo2.png';
 import { isAuthenticated } from '@/api/config';
 import useCartStore from '@/stores/useCartStore';
 
@@ -53,7 +53,7 @@ export default function Mockup() {
     setIsLoggedIn(isAuthenticated());
   }, []);
 
-  const { addToCart, setCheckoutData, cartItems } = useCartStore();
+  const { addToCart, cartItems } = useCartStore();
 
   const cartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
@@ -74,7 +74,7 @@ export default function Mockup() {
 
   const handleBuyNow = () => {
     console.log('selectedMockupData', selectedMockupData);
-    const orderData = {
+    const cartItem = {
       variantIds: selectedMockupData.variantIds,
       mockupUrl: selectedMockupData.mockupUrl,
       patternUrl: selectedMockupData.patternUrl,
@@ -83,8 +83,10 @@ export default function Mockup() {
       size: selectedSize,
       quantity,
     };
-    console.log('orderData', orderData);
-    setCheckoutData(orderData);
+    console.log('cartItem for buy now', cartItem);
+
+    // Add item to cart
+    addToCart(cartItem);
 
     if (!isLoggedIn) {
       // Show modal instead of redirecting directly
@@ -130,8 +132,7 @@ export default function Mockup() {
       <nav className="bg-white border-b border-gray-100 px-6 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
-            <Heart className="w-7 h-7 text-rose-500 fill-rose-500" />
-            <span className="text-xl font-bold text-navy-900">Wear Memories</span>
+            <img src={logo} alt="Wear Memories" className="h-10 w-auto" />
           </Link>
           <div className="flex items-center gap-4">
             {isLoggedIn ? (
