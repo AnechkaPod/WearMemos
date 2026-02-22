@@ -7,7 +7,7 @@ export default function MockupViewer({ mockupUrl, onSave }) {
     if (mockupUrl) {
       const link = document.createElement('a');
       link.href = mockupUrl;
-      link.download = 'wear-memories-mockup.png';
+      link.download = 'thread-doodle-mockup.png';
       link.click();
     }
   };
@@ -16,7 +16,7 @@ export default function MockupViewer({ mockupUrl, onSave }) {
     // if (mockupUrl) {
     //   const link = document.createElement('a');
     //   link.href = mockupUrl;
-    //   link.download = 'wear-memories-mockup.png';
+    //   link.download = 'thread-doodle-mockup.png';
     //   link.click();
     // }
   };

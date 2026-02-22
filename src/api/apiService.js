@@ -82,13 +82,15 @@ class ApiService {
 
   // Pattern endpoints
   patterns = {
-    generate: async (files, settings) => {
+    generate: async (files, settings, countryCode = 'US') => {
       const formData = new FormData();
       files.forEach(file => {
         formData.append('files', file);
       });
       formData.append('settingsJson', JSON.stringify(settings));
+      formData.append('countryCode', countryCode);
       console.log('settingsJson FOR generate', JSON.stringify(settings));
+      console.log('countryCode FOR generate', countryCode);
       return this.request('/patterns/generate', {
         method: 'POST',
         body: formData,

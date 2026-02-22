@@ -27,6 +27,13 @@ const useCartStore = create(
         )
       })),
 
+      // Update item size
+      updateSize: (index, size) => set((state) => ({
+        cartItems: state.cartItems.map((item, i) =>
+          i === index ? { ...item, size } : item
+        )
+      })),
+
       // Clear cart
       clearCart: () => set({ cartItems: [] }),
 

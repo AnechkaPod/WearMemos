@@ -8,7 +8,10 @@ import {
   ArrowRight,
   Loader2,
   Check,
-  ShoppingBag
+  ShoppingBag,
+  Trash2,
+  Plus,
+  Minus
 } from 'lucide-react';
 import { PayPalButtons, usePayPalScriptReducer } from '@paypal/react-paypal-js';
 import AppLayout from '@/components/layout/AppLayout';
@@ -17,7 +20,7 @@ import useCartStore from '@/stores/useCartStore';
 
 export default function Checkout() {
   const navigate = useNavigate();
-  const { cartItems, clearCart } = useCartStore();
+  const { cartItems, clearCart, removeFromCart, updateQuantity } = useCartStore();
   const [loading, setLoading] = useState(false);
   const [calculatingShipping, setCalculatingShipping] = useState(false);
   const [step, setStep] = useState(1);
@@ -52,6 +55,9 @@ export default function Checkout() {
   const selectedShippingRef = useRef(selectedShipping);
   selectedShippingRef.current = selectedShipping;
 
+  // Flag to prevent the empty-cart redirect from firing during order completion
+  const orderCompletingRef = useRef(false);
+
   // Calculate totals from cart items
   const subtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   // Handle both camelCase and PascalCase from C# API
@@ -59,7 +65,7 @@ export default function Checkout() {
   const total = shippingCost !== null ? subtotal + shippingCost : subtotal;
 
   useEffect(() => {
-    if (cartItems.length === 0) {
+    if (cartItems.length === 0 && !orderCompletingRef.current) {
       navigate('/design');
     }
   }, [cartItems, navigate]);
@@ -265,6 +271,7 @@ useEffect(() => {
         paymentStatus: details.status
       }, null, 2));
 
+      console.log('Creating order with backend...currentCartItems:', currentCartItems );
       // Send order to backend with all cart items
       const orderResponse = await apiService.orders.create({
         // Array of all items in the order
@@ -307,7 +314,8 @@ useEffect(() => {
         orderDate: new Date().toISOString()
       };
 
-      // Clear cart and navigate to thank you page with order details
+      // Suppress the empty-cart redirect, then clear and navigate to thank you
+      orderCompletingRef.current = true;
       clearCart();
       navigate('/thankyou', { state: { orderDetails } });
 
@@ -693,24 +701,65 @@ useEffect(() => {
                 <h3 className="text-lg font-semibold text-navy-900 mb-4">Order Summary</h3>
 
                 {/* List all cart items */}
-                <div className="space-y-4 pb-4 border-b border-gray-100 max-h-80 overflow-y-auto">
+                <div className="space-y-4 pb-4 border-b border-gray-100 max-h-[32rem] overflow-y-auto">
                   {cartItems.map((item, index) => (
-                    <div key={index} className="flex gap-4">
-                      <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-rose-100 to-amber-100 flex items-center justify-center overflow-hidden flex-shrink-0">
-                        {item.mockupUrl ? (
-                          <img src={item.mockupUrl} alt="" className="w-full h-full object-cover rounded-xl" />
-                        ) : (
-                          <ShoppingBag className="w-6 h-6 text-rose-400" />
-                        )}
+                    <div key={index} className="border border-gray-100 rounded-2xl p-3 space-y-3">
+                      {/* Image + name + delete */}
+                      <div className="flex gap-3">
+                        <button
+                          onClick={() => navigate('/mockup')}
+                          className="w-14 h-14 rounded-xl bg-gradient-to-br from-rose-100 to-amber-100 flex items-center justify-center overflow-hidden flex-shrink-0 hover:opacity-80 transition-opacity"
+                          title="Click to change size or details"
+                        >
+                          {item.mockupUrl ? (
+                            <img src={item.mockupUrl} alt="" className="w-full h-full object-cover rounded-xl" />
+                          ) : (
+                            <ShoppingBag className="w-5 h-5 text-rose-400" />
+                          )}
+                        </button>
+                        <div className="flex-1 min-w-0">
+                          <button
+                            onClick={() => navigate('/mockup')}
+                            className="font-medium text-navy-900 text-sm truncate hover:text-doodle-orange transition-colors text-left w-full"
+                            title="Click to change size or details"
+                          >
+                            {item.name || 'Custom Design Product'}
+                          </button>
+                          <p className="text-xs text-gray-500 mt-0.5">Size: {item.size} · Qty: {item.quantity}</p>
+                          <p className="text-sm font-semibold text-doodle-coral mt-0.5">
+                            ${(item.price * item.quantity).toFixed(2)}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => removeFromCart(index)}
+                          className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors flex-shrink-0"
+                          title="Remove item"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-navy-900 text-sm truncate">{item.name || 'Custom Design Product'}</p>
-                        <p className="text-xs text-gray-500">
-                          {item.size && `Size ${item.size}`} · Qty: {item.quantity}
-                        </p>
-                        <p className="text-sm font-semibold text-rose-500">
-                          ${(item.price * item.quantity).toFixed(2)}
-                        </p>
+
+                      {/* Quantity controls */}
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs text-gray-500 font-medium">Quantity</p>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => {
+                              if (item.quantity <= 1) removeFromCart(index);
+                              else updateQuantity(index, item.quantity - 1);
+                            }}
+                            className="w-7 h-7 rounded-lg border-2 border-gray-200 flex items-center justify-center hover:border-doodle-coral hover:text-doodle-coral transition-colors"
+                          >
+                            <Minus className="w-3 h-3" />
+                          </button>
+                          <span className="w-6 text-center text-sm font-bold text-navy-900">{item.quantity}</span>
+                          <button
+                            onClick={() => updateQuantity(index, item.quantity + 1)}
+                            className="w-7 h-7 rounded-lg border-2 border-gray-200 flex items-center justify-center hover:border-doodle-orange hover:text-doodle-orange transition-colors"
+                          >
+                            <Plus className="w-3 h-3" />
+                          </button>
+                        </div>
                       </div>
                     </div>
                   ))}

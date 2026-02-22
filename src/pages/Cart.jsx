@@ -48,7 +48,7 @@ export default function Cart() {
       <nav className="bg-white border-b border-gray-100 px-6 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
-            <img src={logo} alt="Wear Memories" className="h-10 w-auto" />
+            <img src={logo} alt="Thread Doodle" className="h-10 w-auto" />
           </Link>
           <div className="flex items-center gap-4">
             {isLoggedIn ? (

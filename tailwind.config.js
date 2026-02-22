@@ -4,12 +4,34 @@ module.exports = {
     content: ["./index.html", "./src/**/*.{ts,tsx,js,jsx}"],
   theme: {
   	extend: {
+  		fontFamily: {
+  			sans: ['Nunito', 'system-ui', 'sans-serif'],
+  		},
   		borderRadius: {
   			lg: 'var(--radius)',
   			md: 'calc(var(--radius) - 2px)',
   			sm: 'calc(var(--radius) - 4px)'
   		},
   		colors: {
+  			// Thread Doodle brand colors
+  			doodle: {
+  				orange: '#F5A523',
+  				'orange-dark': '#D9911A',
+  				coral: '#E8546A',
+  				'coral-dark': '#CF3D56',
+  				blue: '#4ABCD6',
+  				'blue-dark': '#30A8C4',
+  				dark: '#1C1C1E',
+  			},
+  			// Aliases used throughout the codebase
+  			navy: {
+  				900: '#1C1C1E',
+  				800: '#2C2C2E',
+  			},
+  			cream: {
+  				50: '#FFF8F0',
+  				100: '#FFF0E0',
+  			},
   			background: 'hsl(var(--background))',
   			foreground: 'hsl(var(--foreground))',
   			card: {

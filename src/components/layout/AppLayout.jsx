@@ -28,12 +28,12 @@ export default function AppLayout({ children }) {
   };
 
   return (
-    <div className="min-h-screen bg-cream-50">
+    <div className="min-h-screen bg-cream-50 font-sans">
       {/* Mobile Header */}
-      <header className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-100 px-4 py-3">
+      <header className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-white border-b-2 border-gray-100 px-4 py-3">
         <div className="flex items-center justify-between">
           <Link to="/">
-            <img src={logo} alt="Wear Memories" className="h-8 w-auto" />
+            <img src={logo} alt="Thread Doodle" className="h-8 w-auto" />
           </Link>
           <button 
             onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -46,16 +46,16 @@ export default function AppLayout({ children }) {
 
       {/* Sidebar */}
       <aside className={`
-        fixed top-0 left-0 z-40 h-full w-64 bg-white border-r border-gray-100
+        fixed top-0 left-0 z-40 h-full w-64 bg-white border-r-2 border-gray-100
         transform transition-transform duration-300 ease-in-out
         lg:translate-x-0
         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
       `}>
         <div className="flex flex-col h-full">
           {/* Logo */}
-          <div className="p-6 border-b border-gray-100">
+          <div className="p-6 border-b-2 border-gray-100">
             <Link to="/">
-              <img src={logo} alt="Wear Memories" className="h-10 w-auto" />
+              <img src={logo} alt="Thread Doodle" className="h-10 w-auto" />
             </Link>
           </div>
 
@@ -71,9 +71,9 @@ export default function AppLayout({ children }) {
                       onClick={() => setSidebarOpen(false)}
                       className={`
                         flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all
-                        ${isActive 
-                          ? 'bg-navy-900 text-white' 
-                          : 'text-gray-600 hover:bg-gray-50 hover:text-navy-900'
+                        ${isActive
+                          ? 'bg-doodle-orange/10 text-doodle-orange border-l-4 border-doodle-orange font-bold'
+                          : 'text-gray-600 hover:bg-cream-50 hover:text-doodle-dark font-semibold border-l-4 border-transparent'
                         }
                       `}
                     >
@@ -87,13 +87,13 @@ export default function AppLayout({ children }) {
           </nav>
 
           {/* User Section */}
-          <div className="p-4 border-t border-gray-100">
+          <div className="p-4 border-t-2 border-gray-100">
             <div className="flex items-center gap-3 px-4 py-3 mb-2">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-rose-400 to-amber-400 flex items-center justify-center text-white font-semibold">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-doodle-coral to-doodle-orange flex items-center justify-center text-white font-black text-lg">
                 {user.fullName?.charAt(0) || 'U'}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-medium text-navy-900 truncate">{user.fullName || 'User'}</p>
+                <p className="font-bold text-doodle-dark truncate">{user.fullName || 'User'}</p>
                 <p className="text-sm text-gray-500 truncate">{user.email || ''}</p>
               </div>
             </div>

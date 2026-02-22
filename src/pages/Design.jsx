@@ -17,6 +17,7 @@ export default function Design() {
   const [generating, setGenerating] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [uploadedArtworks, setUploadedArtworks] = useState([]);
+  const [userCountryCode, setUserCountryCode] = useState('US');
   const [patternSettings] = useState({
     layout: 'grid',
     rotation: 0,
@@ -36,8 +37,21 @@ export default function Design() {
       setUploadedArtworks(JSON.parse(stored));
       sessionStorage.removeItem('uploadedArtworks');
     }
-  }, []);
 
+
+fetch('https://api.country.is/')
+    .then(res => res.json())
+    .then(data => {
+        if (data.country) {
+            setUserCountryCode(data.country);
+            console.log('Detected country:', data.country);
+        }
+    })
+    .catch(() => {
+        console.log('Failed to detect country - defaulting to US');
+    });
+  }, []);
+    
   const generatePattern = async () => {
     console.log('generatePattern');
     if (uploadedArtworks.length === 0) return;
@@ -47,11 +61,18 @@ export default function Design() {
     try {
       const files = uploadedArtworks.map(a => a.file);
       console.log('files to generate pattern....', files);  
-      const data = await apiService.patterns.generate(files, patternSettings);
+      console.log('userCountryCode', userCountryCode);
+      const data = await apiService.patterns.generate(files, patternSettings, userCountryCode);
       console.log('pattern generate data', data);
 
       // Flatten all mockups from all pattern results into a single array
-      const allMockups = data.flatMap(item => item.mockups);
+      // Carry patternUrl from each parent pattern result into every mockup object
+      const allMockups = data.flatMap(item =>
+        (item.mockups || item.Mockups || []).map(mockup => ({
+          ...mockup,
+          patternUrl: item.patternUrl || item.PatternUrl || mockup.patternUrl || mockup.PatternUrl,
+        }))
+      );
 
       // Store mockups in sessionStorage and navigate to shop page
       sessionStorage.setItem('generatedMockups', JSON.stringify(allMockups));
@@ -75,7 +96,7 @@ export default function Design() {
       <nav className="bg-white border-b border-gray-100 px-6 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
-            <img src={logo} alt="Wear Memories" className="h-10 w-auto" />
+            <img src={logo} alt="Thread Doodle" className="h-10 w-auto" />
           </Link>
           <div className="flex items-center gap-4">
             {isLoggedIn ? (

@@ -1,4 +1,3 @@
-import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { CheckCircle, Package, Palette, MapPin, CreditCard, Truck, Calendar } from 'lucide-react';
@@ -23,7 +22,7 @@ export default function ThankYou() {
       <nav className="bg-white/80 backdrop-blur-md border-b border-gray-100 px-6 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
-            <img src={logo} alt="Wear Memories" className="h-10 w-auto" />
+            <img src={logo} alt="Thread Doodle" className="h-10 w-auto" />
           </Link>
         </div>
       </nav>
@@ -47,7 +46,7 @@ export default function ThankYou() {
 
           <h1 className="text-3xl font-bold text-navy-900 mb-2">Thank You for Your Order!</h1>
           <p className="text-gray-600">
-            Your custom design is on its way to being created just for you.
+            Your Thread Doodle creation is on its way to being printed just for you.
           </p>
         </motion.div>
 

@@ -67,7 +67,7 @@ export default function SignIn() {
       >
         {/* Logo */}
         <Link to="/" className="flex items-center justify-center gap-2 mb-8">
-          <img src={logo} alt="Wear Memories" className="h-12 w-auto" />
+          <img src={logo} alt="Thread Doodle" className="h-12 w-auto" />
         </Link>
 
         {/* Card */}
